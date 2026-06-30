@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:        #0F172A;
+  --bg-card:   #1E293B;
+  --bg-raised: #263347;
+  --border:    #2E3E55;
+  --text:      #F1F5F9;
+  --muted:     #94A3B8;
+  --faint:     #475569;
+  --accent:    #3B82F6;
+  --accent2:   #06B6D4;
+  --green:     #22C55E;
+  --yellow:    #F59E0B;
+  --red:       #EF4444;
+  --purple:    #A855F7;
+
+  --font-sans: var(--font-geist-sans, "Inter", sans-serif);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="light"] {
+  --bg:        #F6F8FC;
+  --bg-card:   #FFFFFF;
+  --bg-raised: #F1F5F9;
+  --border:    #E2E8F0;
+  --text:      #0F172A;
+  --muted:     #64748B;
+  --faint:     #94A3B8;
+  --accent:    #2563EB;
+  --accent2:   #0891B2;
+  --green:     #16A34A;
+  --yellow:    #D97706;
+  --red:       #DC2626;
+  --purple:    #9333EA;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+a { text-decoration: none; color: inherit; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-raised) 50%, var(--bg-card) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+
+.fade-up { animation: fadeUp .35s ease both; }
