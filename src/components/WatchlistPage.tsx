@@ -42,6 +42,26 @@ function ScoreRing({ score, size = 38 }: { score: number; size?: number }) {
   );
 }
 
+function StockLogo({ ticker, size = 36 }: { ticker: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const r = Math.round(size * 0.26);
+  if (failed) {
+    const bg = STOCK_DB[ticker]?.color ?? "#64748B";
+    return (
+      <div style={{ width: size, height: size, borderRadius: r, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.3), fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+        {ticker.slice(0, 2)}
+      </div>
+    );
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: r, overflow: "hidden", background: "#fff", flexShrink: 0, border: "1px solid rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <img src={`https://assets.parqet.com/logos/symbol/${ticker}?format=jpg`} alt={ticker}
+        width={size} height={size} style={{ width: size, height: size, objectFit: "contain" }}
+        onError={() => setFailed(true)} />
+    </div>
+  );
+}
+
 function MiniSpark({ path, up }: { path: string; up: boolean }) {
   return (
     <svg width={60} height={32} style={{ flexShrink: 0 }}>
@@ -128,9 +148,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-raised)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: STOCK_DB[t]?.color ?? "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#fff" }}>
-                    {t.slice(0, 4)}
-                  </div>
+                  <StockLogo ticker={t} size={28} />
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{t}</div>
                     <div style={{ fontSize: 11, color: "var(--muted)" }}>{STOCK_DB[t]?.name}</div>
@@ -169,9 +187,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
               {/* Ticker */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-                  {s.ticker.slice(0, 4)}
-                </div>
+                <StockLogo ticker={s.ticker} size={36} />
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>{s.ticker}</div>
                   <div style={{ fontSize: 11, color: "var(--muted)", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
