@@ -310,3 +310,9 @@ Deployment note:
 - Save-to-Watchlist actions now keep users on the current page instead of navigating to AI Watchlist.
 - Screener result rows show an inline "Added" confirmation after saving.
 - Stock detail save button now shows the same added confirmation state.
+
+## Implementation Update 2026-07-01 - Dashboard Live Quotes
+
+- Added `/api/quotes` as a bulk quote proxy backed by FMP.
+- Dashboard Top Picks and Watchlist now refresh displayed price and daily change from live quote data after the page loads.
+- Existing static dashboard values remain as fallback if the quote API or API key is unavailable.

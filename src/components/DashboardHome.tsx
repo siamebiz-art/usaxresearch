@@ -64,6 +64,60 @@ const WATCHLIST = [
   { ticker: "AMZN",  name: "Amazon.com",      price: "184.25", change: "+1.34%", up: true,  score: 82, spark: "M0,24 L12,21 L24,19 L36,16 L48,13 L60,10" },
 ];
 
+type DashboardQuote = {
+  price: number;
+  changePct: number;
+};
+
+const DASHBOARD_QUOTE_SYMBOLS = [
+  ...new Set([...TOP_PICKS.map((stock) => stock.ticker), ...WATCHLIST.map((stock) => stock.ticker)]),
+].join(",");
+
+function formatLivePrice(price: number) {
+  return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatLiveChange(changePct: number) {
+  return `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`;
+}
+
+function useDashboardQuotes() {
+  const [quotes, setQuotes] = useState<Record<string, DashboardQuote>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQuotes() {
+      try {
+        const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(DASHBOARD_QUOTE_SYMBOLS)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const next: Record<string, DashboardQuote> = {};
+        if (Array.isArray(data.quotes)) {
+          data.quotes.forEach((quote: { ticker?: string; price?: number; changePct?: number }) => {
+            if (!quote.ticker || !Number.isFinite(quote.price)) return;
+            next[quote.ticker] = {
+              price: Number(quote.price),
+              changePct: Number(quote.changePct ?? 0),
+            };
+          });
+        }
+        if (!cancelled) setQuotes(next);
+      } catch {}
+    }
+
+    void loadQuotes();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return quotes;
+}
+
 const MARKET = [
   { label: "S&P 500",   value: "5,487.03", change: "+0.54%", up: true,  path: "M0,38 L15,32 L30,35 L45,23 L60,26 L75,18 L90,10" },
   { label: "NASDAQ",    value: "17,461.32", change: "+0.75%", up: true,  path: "M0,38 L15,34 L30,30 L45,25 L60,19 L75,13 L90,7"  },
@@ -348,6 +402,8 @@ function ScreenerRow({ lang }: { lang: string }) {
 // ── Top Picks (horizontal cards) ─────────────────────────────
 
 function TopPicksCard({ lang }: { lang: string }) {
+  const liveQuotes = useDashboardQuotes();
+
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow)" }}>
       {/* Header */}
@@ -374,6 +430,10 @@ function TopPicksCard({ lang }: { lang: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)" }}>
         {TOP_PICKS.map((stock, i) => {
           const tags = lang === "th" ? stock.tags_th : stock.tags_en;
+          const live = liveQuotes[stock.ticker];
+          const price = live ? formatLivePrice(live.price) : stock.price;
+          const change = live ? formatLiveChange(live.changePct) : stock.change;
+          const up = live ? live.changePct >= 0 : stock.up;
           return (
             <div key={stock.ticker} style={{ padding: "16px 12px", borderRight: i < 4 ? "1px solid var(--border)" : "none", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", cursor: "pointer" }}>
               {/* Rank + Logo row */}
@@ -388,9 +448,9 @@ function TopPicksCard({ lang }: { lang: string }) {
               <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 1 }}>{stock.ticker}</div>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 8, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stock.name}</div>
 
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>${stock.price}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: stock.up ? "var(--green)" : "var(--red)", display: "flex", alignItems: "center", gap: 2, justifyContent: "center", marginBottom: 14 }}>
-                {stock.up ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {stock.change}
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>${price}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: up ? "var(--green)" : "var(--red)", display: "flex", alignItems: "center", gap: 2, justifyContent: "center", marginBottom: 14 }}>
+                {up ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {change}
               </div>
 
               <div style={{ fontSize: 9.5, color: "var(--faint)", fontWeight: 600, marginBottom: 6 }}>AI Score</div>
@@ -562,6 +622,7 @@ function FearGreedCard({ lang }: { lang: string }) {
 
 function WatchlistCard({ lang }: { lang: string }) {
   const [starred, setStarred] = useState<Set<string>>(new Set(["AAPL", "MSFT"]));
+  const liveQuotes = useDashboardQuotes();
   const cols_th = ["หุ้น", "ราคา", "เปลี่ยนแปลง", "AI Score", "แนวโน้ม", "แจ้งเตือน"];
   const cols_en = ["Stock", "Price", "Change", "AI Score", "Trend", "Alert"];
   const cols    = lang === "th" ? cols_th : cols_en;
@@ -592,7 +653,12 @@ function WatchlistCard({ lang }: { lang: string }) {
         {cols.map(c => <span key={c}>{c}</span>)}
       </div>
 
-      {WATCHLIST.map(w => (
+      {WATCHLIST.map(w => {
+        const live = liveQuotes[w.ticker];
+        const price = live ? formatLivePrice(live.price) : w.price;
+        const change = live ? formatLiveChange(live.changePct) : w.change;
+        const up = live ? live.changePct >= 0 : w.up;
+        return (
         <div key={w.ticker} style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.7fr 0.8fr 0.5fr", gap: "0 8px", padding: "9px 18px", alignItems: "center", borderTop: "1px solid var(--border)", cursor: "pointer" }}>
           {/* Stock */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -607,19 +673,20 @@ function WatchlistCard({ lang }: { lang: string }) {
             </div>
           </div>
           {/* Price */}
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>${w.price}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>${price}</div>
           {/* Change */}
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: w.up ? "var(--green)" : "var(--red)" }}>{w.change}</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: up ? "var(--green)" : "var(--red)" }}>{change}</div>
           {/* Score */}
           <ScoreRing score={w.score} size={30} />
           {/* Sparkline */}
-          <MiniSpark path={w.spark} up={w.up} w={60} h={28} />
+          <MiniSpark path={w.spark} up={up} w={60} h={28} />
           {/* Bell */}
           <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--faint)", display: "flex", alignItems: "center", padding: 0 }}>
             <Bell size={13} />
           </button>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
