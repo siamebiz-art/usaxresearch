@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
   LayoutDashboard, Brain, ArrowLeftRight, Star, Briefcase, Bell,
@@ -219,6 +219,143 @@ function SidebarContent({ active, setActive, closeSidebar, profile, user, onSign
   );
 }
 
+// ── Search suggestions data ───────────────────────────────────
+const SEARCH_ITEMS = [
+  // Screeners
+  { type: "screener", id: "dip",       icon: "📉", th: "หุ้นย่อตัว (Dip Buy)",        en: "Dip Buy Screener",      screenerId: "dip" },
+  { type: "screener", id: "growth",    icon: "🚀", th: "หุ้นเติบโต (Growth)",          en: "Growth Stocks",         screenerId: "growth" },
+  { type: "screener", id: "ai_tech",   icon: "🤖", th: "หุ้น AI & Tech",              en: "AI & Tech Stocks",      screenerId: "ai_tech" },
+  { type: "screener", id: "cyber",     icon: "🛡️", th: "หุ้น Cybersecurity",          en: "Cybersecurity Stocks",  screenerId: "cyber" },
+  { type: "screener", id: "breakout",  icon: "⚡", th: "หุ้น Breakout",               en: "Breakout Stocks",       screenerId: "breakout" },
+  { type: "screener", id: "quality",   icon: "💎", th: "หุ้น Quality (คุณภาพสูง)",   en: "Quality Stocks",        screenerId: "quality" },
+  { type: "screener", id: "dividend",  icon: "💰", th: "หุ้นปันผล (Dividend)",        en: "Dividend Stocks",       screenerId: "dividend" },
+  // Pages
+  { type: "page", id: "dashboard",  icon: "🏠", th: "หน้าหลัก Dashboard",    en: "Dashboard",          page: "dashboard" },
+  { type: "page", id: "screener",   icon: "🔍", th: "AI Screener",            en: "AI Screener",        page: "screener" },
+  { type: "page", id: "watchlist",  icon: "⭐", th: "Watchlist รายการหุ้น",  en: "Watchlist",          page: "watchlist" },
+  { type: "page", id: "portfolio",  icon: "💼", th: "Portfolio พอร์ตของฉัน", en: "My Portfolio",       page: "portfolio" },
+  { type: "page", id: "market",     icon: "🌐", th: "ภาพรวมตลาด",            en: "Market Overview",    page: "market" },
+  { type: "page", id: "news",       icon: "📰", th: "ข่าวสารตลาด",           en: "Market News",        page: "news" },
+  { type: "page", id: "earnings",   icon: "📅", th: "Earnings Calendar",     en: "Earnings Calendar",  page: "earnings" },
+  { type: "page", id: "education",  icon: "📚", th: "ความรู้การลงทุน",       en: "Education",          page: "education" },
+  { type: "page", id: "settings",   icon: "⚙️", th: "ตั้งค่า Settings",      en: "Settings",           page: "settings" },
+];
+
+// ── Search Bar ────────────────────────────────────────────────
+function SearchBar({ lang }: { lang: string }) {
+  const [query,  setQuery]  = useState("");
+  const [open,   setOpen]   = useState(false);
+  const [cursor, setCursor] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const boxRef   = useRef<HTMLDivElement>(null);
+  const TH = lang === "th";
+
+  const filtered = query.trim()
+    ? SEARCH_ITEMS.filter(item =>
+        item.th.toLowerCase().includes(query.toLowerCase()) ||
+        item.en.toLowerCase().includes(query.toLowerCase())
+      )
+    : SEARCH_ITEMS;
+
+  const screeners = filtered.filter(i => i.type === "screener");
+  const pages     = filtered.filter(i => i.type === "page");
+
+  const navigate = (item: typeof SEARCH_ITEMS[0]) => {
+    window.dispatchEvent(new CustomEvent("usax-navigate", {
+      detail: { page: item.page ?? "screener", screenerId: item.screenerId ?? null }
+    }));
+    setQuery(""); setOpen(false); setCursor(-1);
+    inputRef.current?.blur();
+  };
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false); setCursor(-1);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const allFiltered = [...screeners, ...pages];
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (!open) return;
+    if (e.key === "ArrowDown")  { e.preventDefault(); setCursor(c => Math.min(c + 1, allFiltered.length - 1)); }
+    if (e.key === "ArrowUp")    { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)); }
+    if (e.key === "Enter" && cursor >= 0) navigate(allFiltered[cursor]);
+    if (e.key === "Escape")     { setOpen(false); setCursor(-1); }
+  };
+
+  return (
+    <div ref={boxRef} style={{ flex: 1, maxWidth: 520, margin: "0 16px", position: "relative" }}>
+      <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--faint)", pointerEvents: "none", zIndex: 1 }} />
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={e => { setQuery(e.target.value); setCursor(-1); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={handleKey}
+        placeholder={TH ? "ค้นหา เช่น หุ้น AI, Watchlist, ตลาด..." : "Search screeners, pages..."}
+        style={{ width: "100%", background: "var(--bg-raised)", border: `1px solid ${open ? "var(--accent)" : "var(--border)"}`, borderRadius: open ? "11px 11px 0 0" : 11, color: "var(--text)", padding: "8px 14px 8px 36px", fontSize: 13, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
+      />
+      {open && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--bg-card)", border: "1px solid var(--accent)", borderTop: "none", borderRadius: "0 0 12px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 9999, maxHeight: 360, overflowY: "auto" }}>
+          {allFiltered.length === 0 ? (
+            <div style={{ padding: "14px 16px", color: "var(--faint)", fontSize: 13 }}>ไม่พบผลลัพธ์</div>
+          ) : (
+            <>
+              {screeners.length > 0 && (
+                <>
+                  <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: "0.08em" }}>
+                    {TH ? "AI SCREENER" : "AI SCREENER"}
+                  </div>
+                  {screeners.map((item, i) => {
+                    const idx = i;
+                    return (
+                      <div key={item.id} onMouseDown={() => navigate(item)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", cursor: "pointer", background: cursor === idx ? "var(--bg-raised)" : "transparent", transition: "background 0.1s" }}
+                        onMouseEnter={() => setCursor(idx)}>
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                        <span style={{ fontSize: 13, color: "var(--text)" }}>{TH ? item.th : item.en}</span>
+                        <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--faint)", background: "var(--bg-raised)", borderRadius: 5, padding: "2px 7px" }}>Screener</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+              {pages.length > 0 && (
+                <>
+                  <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: "0.08em", borderTop: screeners.length > 0 ? "1px solid var(--border)" : "none", marginTop: screeners.length > 0 ? 4 : 0 }}>
+                    {TH ? "หน้า" : "PAGES"}
+                  </div>
+                  {pages.map((item, i) => {
+                    const idx = screeners.length + i;
+                    return (
+                      <div key={item.id} onMouseDown={() => navigate(item)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", cursor: "pointer", background: cursor === idx ? "var(--bg-raised)" : "transparent", transition: "background 0.1s" }}
+                        onMouseEnter={() => setCursor(idx)}>
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                        <span style={{ fontSize: 13, color: "var(--text)" }}>{TH ? item.th : item.en}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </>
+          )}
+          <div style={{ padding: "6px 14px 8px", borderTop: "1px solid var(--border)", display: "flex", gap: 12 }}>
+            <span style={{ fontSize: 10, color: "var(--faint)" }}>↑↓ เลือก</span>
+            <span style={{ fontSize: 10, color: "var(--faint)" }}>Enter ไป</span>
+            <span style={{ fontSize: 10, color: "var(--faint)" }}>Esc ปิด</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Top Bar ───────────────────────────────────────────────────
 function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, profile, onUpgrade, lang, setLang }: any) {
   const name    = profile?.display_name ?? user?.email?.split("@")[0] ?? "User";
@@ -239,13 +376,7 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
       <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap" }}>{label}</div>
 
       {/* Search bar */}
-      <div style={{ flex: 1, maxWidth: 520, margin: "0 16px", position: "relative" }}>
-        <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--faint)", pointerEvents: "none" }} />
-        <input
-          placeholder={lang === "th" ? "Ask AI... เช่น \"หาหุ้น AI ที่ย่อ 25%\"" : "Ask AI... e.g. \"Find AI stocks down 25%\""}
-          style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, color: "var(--text)", padding: "8px 14px 8px 36px", fontSize: 13, outline: "none" }}
-        />
-      </div>
+      <SearchBar lang={lang} />
 
       {/* Right actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
