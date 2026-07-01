@@ -733,6 +733,12 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     document.documentElement.setAttribute("data-theme", next === "dark" ? "dark" : "light");
   };
 
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [active]);
+
   const pageForActive = () => {
     if (active === "dashboard" && children) return children;
     if (active === "screener") return <ScreenerPage selectedId={selectedScreener} setSelectedId={setSelectedScreener} lang={lang} />;
@@ -805,8 +811,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
         />
         <DisclaimerBanner />
         <MarketTickerBar />
-        <main style={{ flex: 1, overflowY: "auto", padding: isMobile ? "12px" : "20px 28px" }}>
-          {pageForActive()}
+        <main ref={mainRef} style={{ flex: 1, overflowY: "auto", padding: isMobile ? "12px" : "20px 28px" }}>
+          <div key={active}>
+            {pageForActive()}
+          </div>
           <DisclaimerFooter />
         </main>
       </div>

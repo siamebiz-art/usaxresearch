@@ -108,7 +108,9 @@ export default function WatchlistPage({ lang }: { lang: string }) {
   };
 
   const suggestions = ALL_TICKERS.filter(t => !list.includes(t) && (t.includes(query.toUpperCase()) || STOCK_DB[t]?.name.toLowerCase().includes(query.toLowerCase())));
-  const stocks = list.map(t => ({ ticker: t, ...STOCK_DB[t] })).filter(s => s.price !== undefined);
+  const stocks = Array.isArray(list)
+    ? list.map(t => ({ ticker: String(t), ...STOCK_DB[String(t)] })).filter(s => s.price != null)
+    : [];
   const best   = stocks.length ? stocks.reduce((a, b) => ((a.score ?? 0) > (b.score ?? 0) ? a : b)) : null;
 
   const addStock = (t: string) => { if (!list.includes(t)) setList(p => [...p, t]); setQuery(""); setFocused(false); };
@@ -124,7 +126,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
             {TH ? "AI Watchlist" : "AI Watchlist"}
           </h1>
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
-            {TH ? `ติดตาม ${list.length} หุ้น • อัปเดตทุก 15 นาที` : `Tracking ${list.length} stocks • Updated every 15 min`}
+            {TH ? `ติดตาม ${stocks.length} หุ้น • อัปเดตทุก 15 นาที` : `Tracking ${stocks.length} stocks • Updated every 15 min`}
           </p>
         </div>
         {/* Add stock input */}
@@ -195,20 +197,20 @@ export default function WatchlistPage({ lang }: { lang: string }) {
               </div>
               {/* Price */}
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>${s.price.toLocaleString()}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>${(s.price ?? 0).toLocaleString()}</div>
               </div>
               {/* Change */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 {s.up ? <TrendingUp size={12} color="var(--green)" /> : <TrendingDown size={12} color="var(--red)" />}
-                <span style={{ fontSize: 12, fontWeight: 700, color: s.up ? "var(--green)" : "var(--red)" }}>{s.change}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: s.up ? "var(--green)" : "var(--red)" }}>{s.change ?? "—"}</span>
               </div>
               {/* Score */}
               <div style={{ display: "flex", justifyContent: "center" }}>
-                <ScoreRing score={s.score} />
+                <ScoreRing score={s.score ?? 0} />
               </div>
               {/* Sparkline */}
               <div style={{ display: "flex", justifyContent: "center" }}>
-                <MiniSpark path={s.spark} up={s.up} />
+                <MiniSpark path={s.spark ?? "M0,20 L60,20"} up={s.up ?? false} />
               </div>
               {/* Alert toggle */}
               <div style={{ display: "flex", justifyContent: "center" }}>
@@ -241,12 +243,12 @@ export default function WatchlistPage({ lang }: { lang: string }) {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <StockLogo ticker={best.ticker} size={48} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "var(--text)" }}>{best.ticker} — {best.name}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "var(--text)" }}>{best.ticker} — {best.name ?? ""}</div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
-                {TH ? `AI Score สูงสุดใน Watchlist ที่ ${best.score}/100` : `Highest AI Score in your watchlist at ${best.score}/100`}
+                {TH ? `AI Score สูงสุดใน Watchlist ที่ ${best.score ?? 0}/100` : `Highest AI Score in your watchlist at ${best.score ?? 0}/100`}
               </div>
             </div>
-            <ScoreRing score={best.score} size={52} />
+            <ScoreRing score={best.score ?? 0} size={52} />
           </div>
           <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 12 }}>
             ⚠️ {TH ? "ข้อมูลเชิงสถิติเท่านั้น ไม่ถือเป็นคำแนะนำการลงทุน" : "Statistical data only — not investment advice"}
