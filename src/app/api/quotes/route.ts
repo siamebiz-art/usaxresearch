@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const FMP_BASE = "https://financialmodelingprep.com/api/v3";
-const FMP_KEY = process.env.FMP_API_KEY;
+const YAHOO_CHART_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 
 function normalizeSymbols(value: string | null) {
   return [
@@ -18,30 +17,42 @@ function normalizeSymbols(value: string | null) {
 }
 
 export async function GET(req: NextRequest) {
-  if (!FMP_KEY) {
-    return NextResponse.json({ error: "FMP_API_KEY is not configured", quotes: [] }, { status: 503 });
-  }
-
   const symbols = normalizeSymbols(req.nextUrl.searchParams.get("symbols"));
   if (!symbols.length) {
     return NextResponse.json({ quotes: [] });
   }
 
-  const response = await fetch(`${FMP_BASE}/quote/${symbols.join(",")}?apikey=${FMP_KEY}`, {
-    cache: "no-store",
-  });
+  const quotes = await Promise.all(
+    symbols.map(async (symbol) => {
+      const params = new URLSearchParams({ range: "1d", interval: "1m" });
+      const response = await fetch(`${YAHOO_CHART_BASE}/${encodeURIComponent(symbol)}?${params}`, {
+        cache: "no-store",
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+        },
+      });
+      if (!response.ok) return null;
 
-  if (!response.ok) {
-    return NextResponse.json({ error: "FMP quote error", quotes: [] }, { status: 502 });
+      const data = await response.json();
+      const result = data?.chart?.result?.[0];
+      const meta = result?.meta;
+      const price = Number(meta?.regularMarketPrice ?? meta?.previousClose ?? 0);
+      const previousClose = Number(meta?.previousClose ?? 0);
+      const changePct = previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0;
+
+      return {
+        ticker: symbol,
+        price,
+        changePct,
+      };
+    }),
+  );
+
+  const validQuotes = quotes.filter((quote): quote is { ticker: string; price: number; changePct: number } => Boolean(quote && quote.price > 0));
+
+  if (!validQuotes.length) {
+    return NextResponse.json({ error: "Quote provider error", quotes: [] }, { status: 502 });
   }
 
-  const data = await response.json();
-  const source = Array.isArray(data) ? data : [];
-  const quotes = source.map((quote: any) => ({
-    ticker: quote.symbol,
-    price: Number(quote.price ?? 0),
-    changePct: Number(quote.changesPercentage ?? 0),
-  }));
-
-  return NextResponse.json({ quotes });
+  return NextResponse.json({ source: "yahoo-finance-chart", quotes: validQuotes });
 }

@@ -313,6 +313,6 @@ Deployment note:
 
 ## Implementation Update 2026-07-01 - Dashboard Live Quotes
 
-- Added `/api/quotes` as a bulk quote proxy backed by FMP.
-- Dashboard Top Picks and Watchlist now refresh displayed price and daily change from live quote data after the page loads.
-- Existing static dashboard values remain as fallback if the quote API or API key is unavailable.
+- Added `/api/quotes` as a bulk quote proxy backed by Yahoo Finance with no paid API key required.
+- Dashboard Top Picks, Watchlist, Market Overview, and the market mini strip now refresh displayed price and daily change from live quote data after the page loads.
+- Existing static dashboard values remain as fallback if the quote provider is unavailable.

@@ -64,13 +64,32 @@ const WATCHLIST = [
   { ticker: "AMZN",  name: "Amazon.com",      price: "184.25", change: "+1.34%", up: true,  score: 82, spark: "M0,24 L12,21 L24,19 L36,16 L48,13 L60,10" },
 ];
 
+const MARKET = [
+  { symbol: "^GSPC", label: "S&P 500",   value: "5,487.03", change: "+0.54%", up: true,  path: "M0,38 L15,32 L30,35 L45,23 L60,26 L75,18 L90,10" },
+  { symbol: "^IXIC", label: "NASDAQ",    value: "17,461.32", change: "+0.75%", up: true,  path: "M0,38 L15,34 L30,30 L45,25 L60,19 L75,13 L90,7"  },
+  { symbol: "^DJI",  label: "DOW JONES", value: "38,868.04", change: "+0.31%", up: true,  path: "M0,34 L15,30 L30,33 L45,27 L60,29 L75,23 L90,18" },
+];
+
+const MARKET_STRIP = [
+  { symbol: "^GSPC", label: "S&P 500",   value: "5,487", change: "+0.54%", up: true  },
+  { symbol: "^IXIC", label: "NASDAQ",    value: "17,461",change: "+0.75%", up: true  },
+  { symbol: "^DJI",  label: "DOW",       value: "38,868",change: "+0.31%", up: true  },
+  { symbol: "^VIX",  label: "VIX",       value: "13.2",  change: "-2.10%", up: false },
+  { symbol: "GC=F",  label: "Gold",      value: "2,329", change: "+0.23%", up: true  },
+];
+
 type DashboardQuote = {
   price: number;
   changePct: number;
 };
 
 const DASHBOARD_QUOTE_SYMBOLS = [
-  ...new Set([...TOP_PICKS.map((stock) => stock.ticker), ...WATCHLIST.map((stock) => stock.ticker)]),
+  ...new Set([
+    ...TOP_PICKS.map((stock) => stock.ticker),
+    ...WATCHLIST.map((stock) => stock.ticker),
+    ...MARKET.map((item) => item.symbol),
+    ...MARKET_STRIP.map((item) => item.symbol),
+  ]),
 ].join(",");
 
 function formatLivePrice(price: number) {
@@ -81,7 +100,7 @@ function formatLiveChange(changePct: number) {
   return `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`;
 }
 
-function useDashboardQuotes() {
+function useDashboardQuotes(symbols = DASHBOARD_QUOTE_SYMBOLS) {
   const [quotes, setQuotes] = useState<Record<string, DashboardQuote>>({});
 
   useEffect(() => {
@@ -89,7 +108,7 @@ function useDashboardQuotes() {
 
     async function loadQuotes() {
       try {
-        const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(DASHBOARD_QUOTE_SYMBOLS)}`, {
+        const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(symbols)}`, {
           cache: "no-store",
         });
         if (!response.ok) return;
@@ -113,16 +132,10 @@ function useDashboardQuotes() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [symbols]);
 
   return quotes;
 }
-
-const MARKET = [
-  { label: "S&P 500",   value: "5,487.03", change: "+0.54%", up: true,  path: "M0,38 L15,32 L30,35 L45,23 L60,26 L75,18 L90,10" },
-  { label: "NASDAQ",    value: "17,461.32", change: "+0.75%", up: true,  path: "M0,38 L15,34 L30,30 L45,25 L60,19 L75,13 L90,7"  },
-  { label: "DOW JONES", value: "38,868.04", change: "+0.31%", up: true,  path: "M0,34 L15,30 L30,33 L45,27 L60,29 L75,23 L90,18" },
-];
 
 const FG_HISTORY = [
   { value: 67, label_th: "Greed",   label_en: "Greed",   color: "#22C55E" },
@@ -291,16 +304,10 @@ function HeroSection({ lang }: { lang: string }) {
 
 // ── Market Mini Strip ─────────────────────────────────────────
 
-const MARKET_STRIP = [
-  { label: "S&P 500",   value: "5,487", change: "+0.54%", up: true  },
-  { label: "NASDAQ",    value: "17,461",change: "+0.75%", up: true  },
-  { label: "DOW",       value: "38,868",change: "+0.31%", up: true  },
-  { label: "VIX",       value: "13.2",  change: "-2.10%", up: false },
-];
-
 function MarketMiniStrip({ lang }: { lang: string }) {
   const TH = lang === "th";
   const [fgValue, setFgValue] = useState(65);
+  const liveQuotes = useDashboardQuotes();
   const fgCol = fgColor(fgValue);
 
   useEffect(() => {
@@ -312,17 +319,23 @@ function MarketMiniStrip({ lang }: { lang: string }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 0, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 20px", marginBottom: 24, overflowX: "auto", scrollbarWidth: "none" }}>
-      {MARKET_STRIP.map((m, i) => (
+      {MARKET_STRIP.map((m, i) => {
+        const live = liveQuotes[m.symbol];
+        const value = live ? formatLivePrice(live.price) : m.value;
+        const change = live ? formatLiveChange(live.changePct) : m.change;
+        const up = live ? live.changePct >= 0 : m.up;
+        return (
         <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 14, paddingRight: 20, marginRight: 20, borderRight: "1px solid var(--border)", flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 9.5, fontWeight: 700, color: "var(--faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>{m.label}</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginTop: 1 }}>{m.value}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginTop: 1 }}>{value}</div>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: m.up ? "var(--green)" : "var(--red)" }}>
-            {m.up ? "▲" : "▼"} {m.change}
+          <div style={{ fontSize: 12, fontWeight: 700, color: up ? "var(--green)" : "var(--red)" }}>
+            {up ? "▲" : "▼"} {change}
           </div>
         </div>
-      ))}
+        );
+      })}
       {/* Fear & Greed mini */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <div>
@@ -484,6 +497,8 @@ function TopPicksCard({ lang }: { lang: string }) {
 // ── Market Overview ──────────────────────────────────────────
 
 function MarketCard({ lang }: { lang: string }) {
+  const liveQuotes = useDashboardQuotes();
+
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow)" }}>
       <div style={{ padding: "13px 18px 10px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -500,16 +515,22 @@ function MarketCard({ lang }: { lang: string }) {
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
-        {MARKET.map((m, i) => (
+        {MARKET.map((m, i) => {
+          const live = liveQuotes[m.symbol];
+          const value = live ? formatLivePrice(live.price) : m.value;
+          const change = live ? formatLiveChange(live.changePct) : m.change;
+          const up = live ? live.changePct >= 0 : m.up;
+          return (
           <div key={m.label} style={{ padding: "12px 14px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
             <div style={{ fontSize: 9.5, color: "var(--faint)", fontWeight: 600, marginBottom: 3 }}>{m.label}</div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 2 }}>{m.value}</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: m.up ? "var(--green)" : "var(--red)", display: "flex", alignItems: "center", gap: 2, marginBottom: 8 }}>
-              {m.up ? <TrendingUp size={9} /> : <TrendingDown size={9} />} {m.change}
+            <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 2 }}>{value}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: up ? "var(--green)" : "var(--red)", display: "flex", alignItems: "center", gap: 2, marginBottom: 8 }}>
+              {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />} {change}
             </div>
-            <MiniSpark path={m.path} up={m.up} w={80} h={36} />
+            <MiniSpark path={m.path} up={up} w={80} h={36} />
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
