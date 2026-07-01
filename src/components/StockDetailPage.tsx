@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown, Star, Bell, ExternalLink } from "lucide-react";
-import { addAlertTickerToUserWatchlist, addTickerToUserWatchlist } from "@/lib/user-data";
+import { addAlertTickerToUserWatchlist, addTickerToUserWatchlist, loadUserWatchlist } from "@/lib/user-data";
 
 // ── Stock database ────────────────────────────────────────────
 const DETAIL_DB: Record<string, any> = {
@@ -42,6 +42,17 @@ function getScoreColor(s: number) {
 
 const LS_WATCHLIST_KEY = "usax-watchlist-v1";
 
+function readSavedWatchlist() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LS_WATCHLIST_KEY) ?? "[]");
+    return Array.isArray(parsed)
+      ? parsed.map((item: unknown) => String(item).trim().toUpperCase()).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function saveTickerToWatchlist(ticker: string) {
   const normalized = ticker.trim().toUpperCase();
   if (!normalized) return;
@@ -59,6 +70,29 @@ function saveTickerToWatchlist(ticker: string) {
     void addTickerToUserWatchlist(normalized);
     window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
   }
+}
+
+function useSavedWatchlistTicker(ticker: string) {
+  const normalized = ticker.trim().toUpperCase();
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const syncSavedState = () => {
+      setSaved(readSavedWatchlist().includes(normalized));
+    };
+
+    syncSavedState();
+    void loadUserWatchlist().then((cloud) => {
+      if (!cloud) return;
+      localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify(cloud.tickers));
+      setSaved(cloud.tickers.includes(normalized));
+    });
+
+    window.addEventListener("usax-watchlist-updated", syncSavedState);
+    return () => window.removeEventListener("usax-watchlist-updated", syncSavedState);
+  }, [normalized]);
+
+  return [saved, setSaved] as const;
 }
 
 function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
@@ -109,7 +143,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
   const TH = lang === "th";
   const d  = getDefault(ticker);
   const [tab, setTab] = useState<Tab>("overview");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useSavedWatchlistTicker(ticker);
   const [alertSaved, setAlertSaved] = useState(false);
 
   const TAB_LABELS: Record<Tab, string> = {
@@ -190,7 +224,6 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
             onClick={() => {
               saveTickerToWatchlist(ticker);
               setSaved(true);
-              window.setTimeout(() => setSaved(false), 1400);
             }}
             style={{ display: "flex", alignItems: "center", gap: 7, background: saved ? "var(--green)" : "linear-gradient(135deg, var(--accent), var(--cyan))", border: "none", borderRadius: 11, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             <Star size={14} /> {saved ? (TH ? "เพิ่มแล้ว" : "Added") : (TH ? "เพิ่มใน Watchlist" : "Add to Watchlist")}
@@ -215,6 +248,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
               }
               void addAlertTickerToUserWatchlist(normalized);
               window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
+              setSaved(true);
               setAlertSaved(true);
               window.setTimeout(() => setAlertSaved(false), 1400);
             }}

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { SCREENERS } from "./DashboardHome";
-import { addTickerToUserWatchlist } from "@/lib/user-data";
+import { addTickerToUserWatchlist, loadUserWatchlist } from "@/lib/user-data";
 
 // ── Stock Logo ────────────────────────────────────────────────
 function StockLogo({ ticker, size = 36 }: { ticker: string; size?: number }) {
@@ -140,6 +140,17 @@ function t(key: keyof typeof T, lang: string): any {
 
 const LS_WATCHLIST_KEY = "usax-watchlist-v1";
 
+function readSavedWatchlist() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LS_WATCHLIST_KEY) ?? "[]");
+    return Array.isArray(parsed)
+      ? parsed.map((item: unknown) => String(item).trim().toUpperCase()).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function saveTickerToWatchlist(ticker: string) {
   const normalized = ticker.trim().toUpperCase();
   if (!normalized) return;
@@ -160,6 +171,29 @@ function saveTickerToWatchlist(ticker: string) {
 }
 
 // ── Score Ring ────────────────────────────────────────────────
+function useSavedWatchlistTicker(ticker: string) {
+  const normalized = ticker.trim().toUpperCase();
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const syncSavedState = () => {
+      setSaved(readSavedWatchlist().includes(normalized));
+    };
+
+    syncSavedState();
+    void loadUserWatchlist().then((cloud) => {
+      if (!cloud) return;
+      localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify(cloud.tickers));
+      setSaved(cloud.tickers.includes(normalized));
+    });
+
+    window.addEventListener("usax-watchlist-updated", syncSavedState);
+    return () => window.removeEventListener("usax-watchlist-updated", syncSavedState);
+  }, [normalized]);
+
+  return [saved, setSaved] as const;
+}
+
 function ScoreRing({ score }: { score: number }) {
   const color = score >= 90 ? "#22C55E" : score >= 75 ? "#EAB308" : "#EF4444";
   const r = 20; const circ = 2 * Math.PI * r;
@@ -178,7 +212,7 @@ function ScoreRing({ score }: { score: number }) {
 // ── Stock Row ─────────────────────────────────────────────────
 function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number; color: string; lang: string; onViewDetail?: (ticker: string) => void }) {
   const [expanded, setExpanded] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useSavedWatchlistTicker(s.ticker);
   return (
       <div>
         <div
@@ -230,7 +264,6 @@ function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number
                 e.stopPropagation();
                 saveTickerToWatchlist(s.ticker);
                 setSaved(true);
-                window.setTimeout(() => setSaved(false), 1600);
               }}
               style={{ background: saved ? "var(--green)" : "none", border: saved ? "1px solid var(--green)" : "1px solid var(--accent)", color: saved ? "#fff" : "var(--accent)", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               ⭐ {saved ? (lang === "th" ? "เพิ่มแล้ว" : "Added") : t("save_watchlist", lang)}
