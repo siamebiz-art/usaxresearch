@@ -102,12 +102,16 @@ function formatLiveChange(changePct: number) {
 
 function useDashboardQuotes(symbols = DASHBOARD_QUOTE_SYMBOLS) {
   const [quotes, setQuotes] = useState<Record<string, DashboardQuote>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
 
     async function loadQuotes() {
       try {
+        if (!cancelled) setIsRefreshing(true);
         const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(symbols)}`, {
           cache: "no-store",
         });
@@ -124,17 +128,42 @@ function useDashboardQuotes(symbols = DASHBOARD_QUOTE_SYMBOLS) {
             };
           });
         }
-        if (!cancelled) setQuotes(next);
-      } catch {}
+        if (!cancelled) {
+          setQuotes(next);
+          setLastUpdated(new Date());
+        }
+      } catch {
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
+      }
     }
 
     void loadQuotes();
+    timer = setInterval(loadQuotes, 30000);
     return () => {
       cancelled = true;
+      if (timer) clearInterval(timer);
     };
   }, [symbols]);
 
-  return quotes;
+  return { quotes, lastUpdated, isRefreshing };
+}
+
+function liveTimeLabel(date: Date | null, lang: string) {
+  if (!date) return lang === "th" ? "กำลังดึงราคา" : "Loading quotes";
+  return `${lang === "th" ? "อัปเดต" : "Updated"} ${date.toLocaleTimeString(lang === "th" ? "th-TH" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+}
+
+function LiveBadge({ lastUpdated, isRefreshing, lang }: { lastUpdated: Date | null; isRefreshing: boolean; lang: string }) {
+  return (
+    <span className="live-quote-badge">
+      <span className={isRefreshing ? "live-dot live-dot-loading" : "live-dot"} />
+      {liveTimeLabel(lastUpdated, lang)}
+    </span>
+  );
 }
 
 const FG_HISTORY = [
@@ -308,7 +337,7 @@ function HeroSection({ lang }: { lang: string }) {
 function MarketMiniStrip({ lang }: { lang: string }) {
   const TH = lang === "th";
   const [fgValue, setFgValue] = useState(65);
-  const liveQuotes = useDashboardQuotes();
+  const { quotes: liveQuotes, lastUpdated, isRefreshing } = useDashboardQuotes();
   const fgCol = fgColor(fgValue);
 
   useEffect(() => {
@@ -320,13 +349,16 @@ function MarketMiniStrip({ lang }: { lang: string }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 0, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 20px", marginBottom: 24, overflowX: "auto", scrollbarWidth: "none" }}>
+      <div style={{ paddingRight: 16, marginRight: 16, borderRight: "1px solid var(--border)", flexShrink: 0 }}>
+        <LiveBadge lastUpdated={lastUpdated} isRefreshing={isRefreshing} lang={lang} />
+      </div>
       {MARKET_STRIP.map((m, i) => {
         const live = liveQuotes[m.symbol];
         const value = live ? formatLivePrice(live.price) : m.value;
         const change = live ? formatLiveChange(live.changePct) : m.change;
         const up = live ? live.changePct >= 0 : m.up;
         return (
-        <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 14, paddingRight: 20, marginRight: 20, borderRight: "1px solid var(--border)", flexShrink: 0 }}>
+        <div key={m.label} className={live ? "live-price-tick" : ""} style={{ display: "flex", alignItems: "center", gap: 14, paddingRight: 20, marginRight: 20, borderRight: "1px solid var(--border)", flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 9.5, fontWeight: 700, color: "var(--faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>{m.label}</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginTop: 1 }}>{value}</div>
@@ -416,7 +448,7 @@ function ScreenerRow({ lang }: { lang: string }) {
 // ── Top Picks (horizontal cards) ─────────────────────────────
 
 function TopPicksCard({ lang }: { lang: string }) {
-  const liveQuotes = useDashboardQuotes();
+  const { quotes: liveQuotes, lastUpdated, isRefreshing } = useDashboardQuotes();
 
   return (
     <div className="responsive-table-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow)" }}>
@@ -435,9 +467,12 @@ function TopPicksCard({ lang }: { lang: string }) {
             </div>
           </div>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LiveBadge lastUpdated={lastUpdated} isRefreshing={isRefreshing} lang={lang} />
         <button style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           {lang === "th" ? "ดูทั้งหมด" : "View All"} <ArrowRight size={13} />
         </button>
+        </div>
       </div>
 
       {/* 5-card horizontal grid */}
@@ -467,7 +502,7 @@ function TopPicksCard({ lang }: { lang: string }) {
               <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 1 }}>{stock.ticker}</div>
               <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 8, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stock.name}</div>
 
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>${price}</div>
+              <div className={live ? "live-price-tick" : ""} style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>${price}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: up ? "var(--green)" : "var(--red)", display: "flex", alignItems: "center", gap: 2, justifyContent: "center", marginBottom: 14 }}>
                 {up ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {change}
               </div>
@@ -503,7 +538,7 @@ function TopPicksCard({ lang }: { lang: string }) {
 // ── Market Overview ──────────────────────────────────────────
 
 function MarketCard({ lang }: { lang: string }) {
-  const liveQuotes = useDashboardQuotes();
+  const { quotes: liveQuotes, lastUpdated, isRefreshing } = useDashboardQuotes();
 
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow)" }}>
@@ -514,10 +549,13 @@ function MarketCard({ lang }: { lang: string }) {
             {lang === "th" ? "ภาพรวมตลาด" : "Market Overview"}
           </span>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LiveBadge lastUpdated={lastUpdated} isRefreshing={isRefreshing} lang={lang} />
         <div style={{ display: "flex", background: "var(--bg-raised)", borderRadius: 7, padding: 2, gap: 2 }}>
           {["US", "Global"].map((tab, i) => (
             <button key={tab} style={{ padding: "3px 10px", borderRadius: 5, border: "none", background: i === 0 ? "var(--bg-card)" : "transparent", color: i === 0 ? "var(--text)" : "var(--faint)", fontSize: 11, fontWeight: i === 0 ? 700 : 400, cursor: "pointer" }}>{tab}</button>
           ))}
+        </div>
         </div>
       </div>
       <div className="market-overview-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
@@ -527,7 +565,7 @@ function MarketCard({ lang }: { lang: string }) {
           const change = live ? formatLiveChange(live.changePct) : m.change;
           const up = live ? live.changePct >= 0 : m.up;
           return (
-          <div key={m.label} style={{ padding: "12px 14px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
+          <div key={m.label} className={live ? "live-price-tick" : ""} style={{ padding: "12px 14px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
             <div style={{ fontSize: 9.5, color: "var(--faint)", fontWeight: 600, marginBottom: 3 }}>{m.label}</div>
             <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 2 }}>{value}</div>
             <div style={{ fontSize: 11, fontWeight: 700, color: up ? "var(--green)" : "var(--red)", display: "flex", alignItems: "center", gap: 2, marginBottom: 8 }}>
@@ -649,7 +687,7 @@ function FearGreedCard({ lang }: { lang: string }) {
 
 function WatchlistCard({ lang }: { lang: string }) {
   const [starred, setStarred] = useState<Set<string>>(new Set(["AAPL", "MSFT"]));
-  const liveQuotes = useDashboardQuotes();
+  const { quotes: liveQuotes, lastUpdated, isRefreshing } = useDashboardQuotes();
   const cols_th = ["หุ้น", "ราคา", "เปลี่ยนแปลง", "AI Score", "แนวโน้ม", "แจ้งเตือน"];
   const cols_en = ["Stock", "Price", "Change", "AI Score", "Trend", "Alert"];
   const cols    = lang === "th" ? cols_th : cols_en;
@@ -663,7 +701,8 @@ function WatchlistCard({ lang }: { lang: string }) {
             {lang === "th" ? "AI Watchlist ของคุณ" : "Your AI Watchlist"}
           </span>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LiveBadge lastUpdated={lastUpdated} isRefreshing={isRefreshing} lang={lang} />
           <button onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "watchlist" } }))}
             style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, padding: "4px 9px", fontSize: 11, fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
             <Plus size={11} /> {lang === "th" ? "เพิ่มหุ้น" : "Add"}
@@ -700,7 +739,7 @@ function WatchlistCard({ lang }: { lang: string }) {
             </div>
           </div>
           {/* Price */}
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>${price}</div>
+          <div className={live ? "live-price-tick" : ""} style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>${price}</div>
           {/* Change */}
           <div style={{ fontSize: 11.5, fontWeight: 700, color: up ? "var(--green)" : "var(--red)" }}>{change}</div>
           {/* Score */}
