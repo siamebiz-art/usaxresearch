@@ -681,9 +681,7 @@ function NewsCard({ lang }: { lang: string }) {
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderBottom: i < AI_SUMMARIES.length - 1 ? "1px solid var(--border)" : "none", cursor: "pointer", transition: "background .15s" }}
           onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-raised)")}
           onMouseLeave={e => (e.currentTarget.style.background = "")}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: n.color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#fff" }}>
-            {n.co}
-          </div>
+          <StockLogo ticker={n.co} size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{n.co}</span>
