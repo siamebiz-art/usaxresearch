@@ -469,7 +469,7 @@ function LoginModal() {
           </button>
           <img src="/LogoUSAX.png" alt="USAX Research" style={{ height: 76, width: "auto", display: "block", margin: "0 auto 10px", borderRadius: 10 }} />
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>
-            {lang === "th" ? "AI วิเคราะห์หุ้นสหรัฐฯ สำหรับนักลงทุนไทย" : "AI Stock Research for Thai Investors"}
+            {lang === "th" ? "AI ช่วยคัดกรองและวิเคราะห์หุ้นสหรัฐฯ เพื่อการศึกษาและการวิจัย" : "AI-powered US stock screening & research platform"}
           </div>
         </div>
 
