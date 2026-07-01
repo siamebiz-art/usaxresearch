@@ -201,7 +201,18 @@ function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number
               style={{ background: "var(--accent)", border: "none", color: "#fff", borderRadius: 8, padding: "7px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               📊 {t("view_more", lang)}
             </button>
-            <button style={{ background: "none", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: 8, padding: "7px 14px", fontSize: 12, cursor: "pointer" }}>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                try {
+                  const existing: string[] = JSON.parse(localStorage.getItem("usax-watchlist-v1") ?? "[]");
+                  if (!existing.includes(s.ticker)) {
+                    localStorage.setItem("usax-watchlist-v1", JSON.stringify([...existing, s.ticker]));
+                  }
+                } catch {}
+                window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "watchlist" } }));
+              }}
+              style={{ background: "none", border: "1px solid var(--accent)", color: "var(--accent)", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               ⭐ {t("save_watchlist", lang)}
             </button>
           </div>
