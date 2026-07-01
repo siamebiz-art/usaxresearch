@@ -111,13 +111,25 @@ const TKR_CLR: Record<string, string> = {
   AMZN: "#FF9900", GOOGL: "#4285F4", CRM: "#00A1E0", FED: "#475569",
 };
 
-function TickerBadge({ ticker, size = 34 }: { ticker: string; size?: number }) {
+function StockLogo({ ticker, size = 34 }: { ticker: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const r = Math.round(size * 0.26);
+  if (failed) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: r, background: TKR_CLR[ticker] ?? "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.3), fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+        {ticker.slice(0, 2)}
+      </div>
+    );
+  }
   return (
-    <div style={{ width: size, height: size, borderRadius: size * 0.26, background: TKR_CLR[ticker] ?? "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.28, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-      {ticker.slice(0, 4)}
+    <div style={{ width: size, height: size, borderRadius: r, overflow: "hidden", background: "#fff", flexShrink: 0, border: "1px solid rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <img src={`https://assets.parqet.com/logos/symbol/${ticker}?format=jpg`} alt={ticker}
+        width={size} height={size} style={{ width: size, height: size, objectFit: "contain" }}
+        onError={() => setFailed(true)} />
     </div>
   );
 }
+const TickerBadge = StockLogo;
 
 function ScoreRing({ score, size = 44 }: { score: number; size?: number }) {
   const color = getScoreColor(score);

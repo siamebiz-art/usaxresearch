@@ -2,6 +2,31 @@
 import { useState, useEffect } from "react";
 import { SCREENERS } from "./DashboardHome";
 
+// ── Stock Logo ────────────────────────────────────────────────
+function StockLogo({ ticker, size = 36 }: { ticker: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const r = Math.round(size * 0.26);
+  const COLORS: Record<string, string> = {
+    NVDA: "#76B900", AAPL: "#555", MSFT: "#00A1F1", TSLA: "#CC0000",
+    AMZN: "#FF9900", META: "#0866FF", GOOGL: "#4285F4", GOOG: "#4285F4",
+    AMD: "#ED1C24", CRWD: "#C1121F", ZS: "#005DAA", PANW: "#00C0E8",
+  };
+  if (failed) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: r, background: COLORS[ticker] ?? "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.3), fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+        {ticker.slice(0, 2)}
+      </div>
+    );
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: r, overflow: "hidden", background: "#fff", flexShrink: 0, border: "1px solid rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <img src={`https://assets.parqet.com/logos/symbol/${ticker}?format=jpg`} alt={ticker}
+        width={size} height={size} style={{ width: size, height: size, objectFit: "contain" }}
+        onError={() => setFailed(true)} />
+    </div>
+  );
+}
+
 // ── Mock results ──────────────────────────────────────────────
 const MOCK_RESULTS: Record<string, any[]> = {
   dip: [
@@ -135,13 +160,14 @@ function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number
     <div>
       <div
         onClick={() => setExpanded(!expanded)}
-        style={{ display: "grid", gridTemplateColumns: "32px 1fr auto auto auto auto auto", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid var(--border)", transition: "background .15s" }}
+        style={{ display: "grid", gridTemplateColumns: "32px 36px 1fr auto auto auto auto auto", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid var(--border)", transition: "background .15s" }}
         onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-raised)")}
         onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
       >
         <div style={{ fontSize: 12, fontWeight: 800, color: rank <= 3 ? color : "var(--faint)", textAlign: "center" }}>#{rank}</div>
+        <StockLogo ticker={s.ticker} size={36} />
         <div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{s.ticker}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>{s.ticker}</div>
           <div style={{ fontSize: 11, color: "var(--muted)" }}>{s.name}</div>
         </div>
         <div style={{ textAlign: "right" }}>
