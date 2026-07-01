@@ -437,24 +437,11 @@ function LoginModal() {
 
   const handleGoogleSignIn = async () => {
     setMsg("");
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          skipBrowserRedirect: true,
-        },
-      });
-      if (error) {
-        setMsg(error.message);
-      } else if (data?.url) {
-        window.location.assign(data.url);
-      } else {
-        setMsg("ไม่สามารถเชื่อมต่อ Google ได้ กรุณาลองใหม่");
-      }
-    } catch (e: any) {
-      setMsg(e?.message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่");
-    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) setMsg(error.message);
   };
 
   const btnLabel = loading ? (lang === "th" ? "กำลังโหลด..." : "Loading...")
