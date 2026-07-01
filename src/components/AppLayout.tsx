@@ -443,13 +443,11 @@ function LoginModal() {
         options: { redirectTo: `${window.location.origin}/dashboard` },
       });
       if (error) {
-        console.error("Google OAuth error:", error);
         setMsg(error.message);
-      } else {
-        console.log("Google OAuth initiated:", data);
+      } else if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (e: any) {
-      console.error("Google OAuth exception:", e);
       setMsg(e?.message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่");
     }
   };
