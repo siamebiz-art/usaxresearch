@@ -108,8 +108,8 @@ export default function WatchlistPage({ lang }: { lang: string }) {
   };
 
   const suggestions = ALL_TICKERS.filter(t => !list.includes(t) && (t.includes(query.toUpperCase()) || STOCK_DB[t]?.name.toLowerCase().includes(query.toLowerCase())));
-  const stocks = list.map(t => ({ ticker: t, ...STOCK_DB[t] })).filter(Boolean);
-  const best   = stocks.reduce((a, b) => (a.score > b.score ? a : b), stocks[0]);
+  const stocks = list.map(t => ({ ticker: t, ...STOCK_DB[t] })).filter(s => s.price !== undefined);
+  const best   = stocks.length ? stocks.reduce((a, b) => ((a.score ?? 0) > (b.score ?? 0) ? a : b)) : null;
 
   const addStock = (t: string) => { if (!list.includes(t)) setList(p => [...p, t]); setQuery(""); setFocused(false); };
   const removeStock = (t: string) => setList(p => p.filter(x => x !== t));
@@ -239,9 +239,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
             ⭐ {TH ? "AI Top Pick จาก Watchlist ของคุณ" : "AI Top Pick from Your Watchlist"}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 13, background: best.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-              {best.ticker.slice(0, 4)}
-            </div>
+            <StockLogo ticker={best.ticker} size={48} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 900, color: "var(--text)" }}>{best.ticker} — {best.name}</div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
