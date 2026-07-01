@@ -91,11 +91,19 @@ export async function loadUserPortfolio() {
 
 export async function saveUserPortfolio(positions: PortfolioPosition[]) {
   const userId = await getUserId();
-  if (!userId) return;
+  if (!userId) {
+    return { ok: true, synced: false, error: "not_authenticated" };
+  }
 
-  await supabase.from("user_portfolios").upsert({
+  const { error } = await supabase.from("user_portfolios").upsert({
     user_id: userId,
     positions,
     updated_at: new Date().toISOString(),
   });
+
+  if (error) {
+    return { ok: false, synced: false, error: error.message };
+  }
+
+  return { ok: true, synced: true };
 }

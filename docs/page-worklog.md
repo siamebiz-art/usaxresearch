@@ -286,3 +286,14 @@
 Deployment note:
 
 - The SQL in `supabase/schema.sql` must be applied to the live Supabase project before cross-device Watchlist/Portfolio sync works in production. Until then, the app still falls back to localStorage.
+
+## Implementation Update 2026-07-01 - Portfolio Analysis
+
+- Portfolio Analysis now supports add, edit, and delete position flows from the holdings table.
+- Position form now validates ticker, shares, average cost, and current price before saving.
+- Current price is editable so users can update portfolio valuation manually when no live quote provider is connected.
+- Portfolio save flow now shows sync state: loading, saving, synced, local fallback, or sync issue.
+- Supabase save helper now returns sync status so the UI can distinguish cloud sync from local-only fallback.
+- Expanded the selectable ticker templates across technology, semiconductors, cybersecurity, financials, consumer, healthcare, and energy.
+- Added empty states for holdings and allocation views.
+- Build check passed with `npm run build`.
