@@ -16,7 +16,7 @@ const SCREENER_CARDS = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", icon: <Sparkles size={20} color="#2563EB" />, title_th: "เลือกสไตล์การลงทุน",  title_en: "Choose your style",       desc_th: "เลือกจาก 10 สไตล์ เช่น หุ้นย่อตัว หุ้นเติบโต หุ้น AI",  desc_en: "Pick from 10 screener types" },
+  { step: "01", icon: <Sparkles size={20} color="#2563EB" />, title_th: "เลือกเทคนิคการคัดกรอง",  title_en: "Choose your screener",       desc_th: "เลือกจาก 10 สไตล์ เช่น หุ้นย่อตัว หุ้นเติบโต หุ้น AI",  desc_en: "Pick from 10 screener types" },
   { step: "02", icon: <Brain    size={20} color="#7C3AED" />, title_th: "AI วิเคราะห์ข้อมูล",  title_en: "AI analyzes the data",     desc_th: "AI ดึงข้อมูลทางการเงินและคัดกรองในทันที",                 desc_en: "AI pulls financial data and screens instantly" },
   { step: "03", icon: <TrendingUp size={20} color="#22C55E" />, title_th: "รับรายชื่อหุ้น",   title_en: "Get ranked results",       desc_th: "รับรายชื่อหุ้นพร้อม AI Score และเหตุผลที่ผ่านการคัดกรอง", desc_en: "Ranked stocks with AI Score and rationale" },
   { step: "04", icon: <Star     size={20} color="#EAB308" />, title_th: "ตัดสินใจด้วยตนเอง",  title_en: "Decide for yourself",      desc_th: "ข้อมูลช่วยประกอบการตัดสินใจ ไม่ใช่คำแนะนำซื้อขาย",      desc_en: "Data to inform your own investment decisions" },
@@ -45,7 +45,7 @@ export default function LandingPage() {
       p2_desc:      "Bloomberg, FactSet ราคาแพงและซับซ้อน คนทั่วไปเข้าถึงได้ยากมาก",
       p3_title:     "ไม่รู้จะ Research อย่างไรให้ถูกต้อง",
       p3_desc:      "PE Ratio ดีแค่ไหน? Revenue Growth โอเคไหม? ต้องดูหลายมิติพร้อมกัน ซับซ้อนมาก",
-      feature_title:"เลือกสไตล์การลงทุน 10 แบบ — AI คัดหุ้นให้ทันที",
+      feature_title:"เลือกเทคนิคการคัดกรอง 10 แบบ — AI คัดหุ้นให้ทันที",
       feature_sub:  "แต่ละสไตล์มี Logic ที่แตกต่างกัน AI จะค้นหาหุ้นที่ตรงกับเกณฑ์และให้คะแนน AI Score",
       how_title:    "ใช้งานง่ายใน 4 ขั้นตอน",
       price_title:  "ราคาที่คุ้มค่า เริ่มต้นฟรี",
