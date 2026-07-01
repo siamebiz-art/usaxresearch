@@ -297,3 +297,10 @@ Deployment note:
 - Expanded the selectable ticker templates across technology, semiconductors, cybersecurity, financials, consumer, healthcare, and energy.
 - Added empty states for holdings and allocation views.
 - Build check passed with `npm run build`.
+
+## Implementation Update 2026-07-01 - Portfolio Watchlist Source
+
+- Portfolio Analysis stock selector now uses the user's Watchlist tickers first.
+- Selector reads Watchlist from Supabase when logged in and from `localStorage` fallback when offline or unauthenticated.
+- If Watchlist is empty, Portfolio falls back to the built-in ticker templates.
+- Existing portfolio positions remain selectable for editing even when they are no longer in Watchlist.

@@ -2,9 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Edit2, Plus, RefreshCw, Save, X } from "lucide-react";
-import { loadUserPortfolio, saveUserPortfolio, type PortfolioPosition } from "@/lib/user-data";
+import { loadUserPortfolio, loadUserWatchlist, saveUserPortfolio, type PortfolioPosition } from "@/lib/user-data";
 
 type Position = PortfolioPosition;
+type TickerTemplate = {
+  ticker: string;
+  name: string;
+  color: string;
+  price: number;
+  sector: string;
+};
 type SyncState = "loading" | "synced" | "saving" | "local" | "error";
 type FormState = {
   ticker: string;
@@ -58,14 +65,45 @@ const TICKER_LIST = [
   { ticker: "KO", name: "Coca-Cola Company", color: "#F40009", price: 62.7, sector: "Consumer" },
   { ticker: "PG", name: "Procter & Gamble", color: "#003DA5", price: 166.1, sector: "Consumer" },
   { ticker: "XOM", name: "Exxon Mobil", color: "#D71920", price: 113.5, sector: "Energy" },
-];
+] satisfies TickerTemplate[];
 
 const LS_PORTFOLIO_KEY = "usax-portfolio-v1";
+const LS_WATCHLIST_KEY = "usax-watchlist-v1";
 const EMPTY_FORM: FormState = { ticker: "NVDA", shares: "", avgCost: "", price: "" };
 
 function parsePositive(value: string) {
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function normalizeTicker(value: unknown) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function normalizeTickerList(value: unknown) {
+  const source = Array.isArray(value) ? value : [];
+  return [...new Set(source.map(normalizeTicker).filter(Boolean))];
+}
+
+function readLocalWatchlist() {
+  try {
+    const stored = localStorage.getItem(LS_WATCHLIST_KEY);
+    if (!stored) return [];
+    return normalizeTickerList(JSON.parse(stored));
+  } catch {
+    return [];
+  }
+}
+
+function getTickerTemplate(ticker: string): TickerTemplate {
+  const normalized = normalizeTicker(ticker);
+  return TICKER_LIST.find((item) => item.ticker === normalized) ?? {
+    ticker: normalized,
+    name: normalized,
+    color: "#64748B",
+    price: 0,
+    sector: "Technology",
+  };
 }
 
 export default function PortfolioPage({ lang }: { lang: string }) {
@@ -78,6 +116,7 @@ export default function PortfolioPage({ lang }: { lang: string }) {
   const [tab, setTab] = useState<"holdings" | "allocation">("holdings");
   const [syncState, setSyncState] = useState<SyncState>("loading");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
 
   useEffect(() => {
     const loadLocalPortfolio = () => {
@@ -106,6 +145,26 @@ export default function PortfolioPage({ lang }: { lang: string }) {
     const timer = window.setTimeout(loadLocalPortfolio, 0);
     void loadCloudPortfolio();
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const loadLocalWatchlist = () => setWatchlistTickers(readLocalWatchlist());
+    const loadCloudWatchlist = async () => {
+      const cloud = await loadUserWatchlist();
+      if (!cloud) return;
+      setWatchlistTickers(cloud.tickers);
+      try {
+        localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify(cloud.tickers));
+      } catch {}
+    };
+
+    const timer = window.setTimeout(loadLocalWatchlist, 0);
+    void loadCloudWatchlist();
+    window.addEventListener("usax-watchlist-updated", loadLocalWatchlist);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("usax-watchlist-updated", loadLocalWatchlist);
+    };
   }, []);
 
   const persistPositions = (next: Position[]) => {
@@ -153,11 +212,17 @@ export default function PortfolioPage({ lang }: { lang: string }) {
       .sort((a, b) => b.value - a.value);
   }, [positions, totalValue]);
 
-  const selectedTicker = TICKER_LIST.find((item) => item.ticker === form.ticker) ?? TICKER_LIST[0];
+  const availableTickers = useMemo(() => {
+    const source = watchlistTickers.length ? watchlistTickers : TICKER_LIST.map((item) => item.ticker);
+    const positionTickers = positions.map((position) => position.ticker);
+    return normalizeTickerList([...source, ...positionTickers]).map(getTickerTemplate);
+  }, [positions, watchlistTickers]);
+  const selectedTicker = availableTickers.find((item) => item.ticker === form.ticker) ?? availableTickers[0] ?? TICKER_LIST[0];
   const isEditing = editingId !== null;
 
   const resetForm = () => {
-    setForm(EMPTY_FORM);
+    const firstTicker = availableTickers[0] ?? TICKER_LIST[0];
+    setForm({ ticker: firstTicker.ticker, shares: "", avgCost: "", price: firstTicker.price > 0 ? String(firstTicker.price) : "" });
     setEditingId(null);
     setFormError("");
   };
@@ -264,12 +329,12 @@ export default function PortfolioPage({ lang }: { lang: string }) {
               <select
                 value={form.ticker}
                 onChange={(event) => {
-                  const nextTicker = TICKER_LIST.find((item) => item.ticker === event.target.value) ?? TICKER_LIST[0];
-                  setForm((prev) => ({ ...prev, ticker: nextTicker.ticker, price: prev.price || String(nextTicker.price) }));
+                  const nextTicker = availableTickers.find((item) => item.ticker === event.target.value) ?? availableTickers[0] ?? TICKER_LIST[0];
+                  setForm((prev) => ({ ...prev, ticker: nextTicker.ticker, price: nextTicker.price > 0 ? String(nextTicker.price) : prev.price }));
                 }}
                 style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none", cursor: "pointer" }}
               >
-                {TICKER_LIST.map((ticker) => (
+                {availableTickers.map((ticker) => (
                   <option key={ticker.ticker} value={ticker.ticker}>{ticker.ticker} - {ticker.name}</option>
                 ))}
               </select>
