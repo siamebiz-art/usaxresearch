@@ -258,9 +258,9 @@ function QuickActions({ lang }: { lang: string }) {
     window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "screener", screenerId: id } }));
 
   return (
-    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+    <div className="quick-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
       {QUICK_ACTIONS.map(a => (
-        <button key={a.id} onClick={() => nav(a.id)}
+        <button key={a.id} className="quick-action-btn" onClick={() => nav(a.id)}
           style={{
             display: "flex", alignItems: "center", gap: 7,
             background: a.bg, border: `1px solid ${a.border}`, borderRadius: 50,
@@ -269,8 +269,8 @@ function QuickActions({ lang }: { lang: string }) {
           }}
           onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 6px 20px ${a.border}`; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-          <span style={{ fontSize: 15 }}>{a.icon}</span>
-          Run {TH ? a.label_th : a.label_en}
+          <span className="quick-action-icon" style={{ fontSize: 15 }}>{a.icon}</span>
+          <span className="quick-action-prefix">Run </span>{TH ? a.label_th : a.label_en}
         </button>
       ))}
     </div>
@@ -282,17 +282,17 @@ function QuickActions({ lang }: { lang: string }) {
 function HeroSection({ lang }: { lang: string }) {
   const TH = lang === "th";
   return (
-    <section style={{ marginBottom: 28 }}>
+    <section className="dashboard-hero" style={{ marginBottom: 28 }}>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 900, color: "var(--text)", margin: "0 0 6px", lineHeight: 1.25 }}>
+        <h1 className="dashboard-hero-title" style={{ fontSize: 26, fontWeight: 900, color: "var(--text)", margin: "0 0 6px", lineHeight: 1.25 }}>
           {TH ? "👋 วันนี้ AI พร้อมคัดกรองหุ้นให้คุณแล้ว" : "👋 Your AI is ready to screen stocks today"}
         </h1>
-        <p style={{ fontSize: 13.5, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
+        <p className="dashboard-hero-copy" style={{ fontSize: 13.5, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
           {TH
             ? "เลือกเทคนิคที่ต้องการ แล้วให้ AI วิเคราะห์และคัดหุ้นให้ทันที"
             : "Choose a strategy — AI will analyze and screen top stocks instantly"}
         </p>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, background: "linear-gradient(135deg, rgba(37,99,235,0.1), rgba(124,58,237,0.1))", border: "1px solid rgba(37,99,235,0.2)", borderRadius: 20, padding: "4px 12px" }}>
+        <div className="dashboard-hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, background: "linear-gradient(135deg, rgba(37,99,235,0.1), rgba(124,58,237,0.1))", border: "1px solid rgba(37,99,235,0.2)", borderRadius: 20, padding: "4px 12px" }}>
           <Sparkles size={12} color="var(--accent)" />
           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", letterSpacing: 0.3 }}>One-Click AI Stock Research™</span>
         </div>
@@ -893,6 +893,15 @@ export default function DashboardHome() {
         @media (max-width: 1100px) { .dash-main { grid-template-columns: 1fr !important; } }
         @media (max-width: 900px)  { .dash-main { grid-template-columns: 1fr !important; } }
         @media (max-width: 760px)  {
+          .dashboard-hero { margin-bottom: 18px !important; }
+          .dashboard-hero-title { font-size: 23px !important; line-height: 1.18 !important; margin-bottom: 10px !important; }
+          .dashboard-hero-copy { font-size: 13px !important; line-height: 1.55 !important; }
+          .dashboard-hero-badge { max-width: 100%; padding: 5px 10px !important; border-radius: 12px !important; }
+          .dashboard-hero-badge span { font-size: 10.5px !important; letter-spacing: 0 !important; }
+          .quick-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px !important; }
+          .quick-action-btn { width: 100%; justify-content: center; border-radius: 14px !important; padding: 10px 8px !important; font-size: 12px !important; white-space: normal !important; line-height: 1.2; min-height: 48px; }
+          .quick-action-prefix { display: none; }
+          .quick-action-icon { font-size: 16px !important; }
           .top-picks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
           .top-pick-card { border-right: none !important; border-bottom: 1px solid var(--border); }
           .dashboard-screener-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
@@ -900,6 +909,7 @@ export default function DashboardHome() {
           .dashboard-watchlist-row { min-width: 680px; }
         }
         @media (max-width: 520px)  {
+          .dashboard-hero-title { font-size: 21px !important; }
           .top-picks-grid { grid-template-columns: 1fr !important; }
           .dashboard-screener-grid { grid-template-columns: 1fr !important; }
         }

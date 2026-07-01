@@ -332,3 +332,16 @@ Deployment note:
 - Stock Detail metric and company-info grids now collapse from four columns to two columns, then one column on small phones.
 - Screener result tables now keep readable column widths on mobile.
 - Build check passed with `npm run build`.
+
+## Implementation Update 2026-07-01 - Mobile Dashboard Polish
+
+- Dashboard hero now uses smaller mobile typography and tighter spacing.
+- One-click screener buttons now render as a compact two-column mobile grid with shorter labels.
+- Mobile top bar is more compact, with search presented as an icon button that expands into a full-width search field on focus.
+- Secondary top bar actions are hidden on mobile to reduce crowding.
+- Build check passed with `npm run build`.
+
+## Implementation Update 2026-07-01 - Portfolio Stock Logos
+
+- Portfolio holdings now use real stock logo images from the same symbol-logo source used by Dashboard, Watchlist, and Screener rows.
+- Holdings keep a ticker-letter fallback if an external logo is unavailable.

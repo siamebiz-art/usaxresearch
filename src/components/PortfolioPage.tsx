@@ -85,6 +85,32 @@ function normalizeTickerList(value: unknown) {
   return [...new Set(source.map(normalizeTicker).filter(Boolean))];
 }
 
+function StockLogo({ ticker, color, size = 34 }: { ticker: string; color: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const radius = Math.round(size * 0.24);
+
+  if (failed) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: radius, background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.26), fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+        {ticker.slice(0, 4)}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width: size, height: size, borderRadius: radius, overflow: "hidden", background: "#fff", flexShrink: 0, border: "1px solid rgba(15,23,42,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <img
+        src={`https://assets.parqet.com/logos/symbol/${encodeURIComponent(ticker)}?format=jpg`}
+        alt={`${ticker} logo`}
+        width={size}
+        height={size}
+        style={{ width: size, height: size, objectFit: "contain" }}
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+}
+
 function readLocalWatchlist() {
   try {
     const stored = localStorage.getItem(LS_WATCHLIST_KEY);
@@ -412,9 +438,7 @@ export default function PortfolioPage({ lang }: { lang: string }) {
               return (
                 <div key={position.id} className="portfolio-holdings-row" style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 70px 90px 90px 110px 115px 76px", gap: 8, alignItems: "center", padding: "13px 16px", borderBottom: index < positions.length - 1 ? "1px solid var(--border)" : "none", transition: "background .12s" }} onMouseEnter={(event) => (event.currentTarget.style.background = "var(--bg-raised)")} onMouseLeave={(event) => (event.currentTarget.style.background = "transparent")}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 8, background: position.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-                      {position.ticker.slice(0, 4)}
-                    </div>
+                    <StockLogo ticker={position.ticker} color={position.color} size={36} />
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{position.ticker}</div>
                       <div style={{ fontSize: 10, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{position.name}</div>

@@ -290,9 +290,10 @@ function SearchBar({ lang }: { lang: string }) {
   };
 
   return (
-    <div ref={boxRef} style={{ flex: 1, maxWidth: 520, margin: "0 16px", position: "relative" }}>
-      <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--faint)", pointerEvents: "none", zIndex: 1 }} />
+    <div ref={boxRef} className="top-search-shell" style={{ flex: 1, maxWidth: 520, margin: "0 16px", position: "relative" }}>
+      <Search className="top-search-icon" size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--faint)", pointerEvents: "none", zIndex: 1 }} />
       <input
+        className="top-search-input"
         ref={inputRef}
         value={query}
         onChange={e => { setQuery(e.target.value); setCursor(-1); }}
@@ -302,7 +303,7 @@ function SearchBar({ lang }: { lang: string }) {
         style={{ width: "100%", background: "var(--bg-raised)", border: `1px solid ${open ? "var(--accent)" : "var(--border)"}`, borderRadius: open ? "11px 11px 0 0" : 11, color: "var(--text)", padding: "8px 14px 8px 36px", fontSize: 13, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
       />
       {open && (
-        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--bg-card)", border: "1px solid var(--accent)", borderTop: "none", borderRadius: "0 0 12px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 9999, maxHeight: 360, overflowY: "auto" }}>
+        <div className="search-results-panel" style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--bg-card)", border: "1px solid var(--accent)", borderTop: "none", borderRadius: "0 0 12px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 9999, maxHeight: 360, overflowY: "auto" }}>
           {allFiltered.length === 0 ? (
             <div style={{ padding: "14px 16px", color: "var(--faint)", fontSize: 13 }}>ไม่พบผลลัพธ์</div>
           ) : (
@@ -365,7 +366,7 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
   const label   = NAV_LABELS[active]?.[lang] ?? active;
 
   return (
-    <div style={{ height: 60, background: "var(--bg-card)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0 }}>
+    <div className="app-topbar" style={{ height: 60, background: "var(--bg-card)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0 }}>
       {/* Hamburger (mobile) */}
       <button onClick={onMenuClick}
         style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 6, display: "none", alignItems: "center", borderRadius: 8 }}
@@ -374,13 +375,13 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
       </button>
 
       {/* Page title */}
-      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap" }}>{label}</div>
+      <div className="app-topbar-title" style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap" }}>{label}</div>
 
       {/* Search bar */}
       <SearchBar lang={lang} />
 
       {/* Right actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+      <div className="app-topbar-actions" style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
         {/* Plan badge (Pro/Elite only) */}
         {plan === "pro" && (
           <button onClick={onUpgrade} style={{ display: "flex", alignItems: "center", gap: 5, background: "linear-gradient(135deg, #F59E0B, #EAB308)", border: "none", borderRadius: 20, padding: "5px 13px", color: "#000", fontWeight: 700, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -388,25 +389,25 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
           </button>
         )}
         {plan === "free" && (
-          <button onClick={onUpgrade} style={{ display: "flex", alignItems: "center", gap: 5, background: "linear-gradient(135deg, #2563EB, #7C3AED)", border: "none", borderRadius: 20, padding: "6px 14px", color: "#fff", fontWeight: 700, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap" }}>
+          <button className="upgrade-btn" onClick={onUpgrade} style={{ display: "flex", alignItems: "center", gap: 5, background: "linear-gradient(135deg, #2563EB, #7C3AED)", border: "none", borderRadius: 20, padding: "6px 14px", color: "#fff", fontWeight: 700, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap" }}>
             <Zap size={11} /> {lang === "th" ? "อัพเกรด" : "Upgrade"}
           </button>
         )}
 
         {/* Lang */}
-        <button onClick={() => setLang(lang === "th" ? "en" : "th")}
+        <button className="lang-toggle-btn" onClick={() => setLang(lang === "th" ? "en" : "th")}
           style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 10px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", color: "var(--muted)", letterSpacing: 0.5, minWidth: 38, textAlign: "center" }}>
           {lang === "th" ? "EN" : "TH"}
         </button>
 
         {/* Theme */}
-        <button onClick={onThemeToggle}
+        <button className="desktop-only-action" onClick={onThemeToggle}
           style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "7px", cursor: "pointer", color: "var(--muted)", display: "flex", alignItems: "center" }}>
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>
 
         {/* Notifications */}
-        <div style={{ position: "relative" }}>
+        <div className="desktop-only-action" style={{ position: "relative" }}>
           <button style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "7px", cursor: "pointer", color: "var(--muted)", display: "flex", alignItems: "center" }}>
             <Bell size={15} />
           </button>
@@ -414,7 +415,7 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
         </div>
 
         {/* User */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 6px", borderRadius: 10, border: "1px solid var(--border)" }}>
+        <div className="desktop-only-action" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 6px", borderRadius: 10, border: "1px solid var(--border)" }}>
           <div>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text)", textAlign: "right" }}>
               {lang === "th" ? "สวัสดีครับ" : "Hello"}
@@ -828,6 +829,88 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       <style>{`
         @media (max-width: 768px) {
           .mobile-menu-btn { display: flex !important; }
+          .app-topbar {
+            height: 52px !important;
+            gap: 8px !important;
+            padding: 0 10px !important;
+          }
+          .app-topbar-title {
+            font-size: 18px !important;
+            font-weight: 900 !important;
+            max-width: 34vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .top-search-shell {
+            flex: 0 0 44px !important;
+            width: 44px !important;
+            height: 44px !important;
+            margin: 0 !important;
+            max-width: 44px !important;
+          }
+          .top-search-input {
+            height: 44px !important;
+            border-radius: 14px !important;
+            padding: 0 !important;
+            color: transparent !important;
+            caret-color: transparent !important;
+          }
+          .top-search-input::placeholder {
+            color: transparent !important;
+          }
+          .top-search-input:focus {
+            position: fixed !important;
+            left: 10px !important;
+            right: 10px !important;
+            top: 58px !important;
+            width: auto !important;
+            color: var(--text) !important;
+            caret-color: var(--text) !important;
+            padding: 10px 14px 10px 38px !important;
+            z-index: 10000 !important;
+            box-shadow: var(--shadow-md);
+          }
+          .top-search-input:focus::placeholder {
+            color: var(--faint) !important;
+          }
+          .top-search-icon {
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+          }
+          .top-search-shell:focus-within .top-search-icon {
+            position: fixed !important;
+            top: 80px !important;
+            left: 28px !important;
+            transform: translateY(-50%) !important;
+            z-index: 10001 !important;
+          }
+          .search-results-panel {
+            position: fixed !important;
+            left: 10px !important;
+            right: 10px !important;
+            top: 102px !important;
+            max-height: min(420px, calc(100vh - 120px)) !important;
+          }
+          .app-topbar-actions {
+            gap: 6px !important;
+            margin-left: 0 !important;
+          }
+          .upgrade-btn {
+            min-height: 40px;
+            border-radius: 999px !important;
+            padding: 0 14px !important;
+            font-size: 13px !important;
+          }
+          .lang-toggle-btn {
+            min-width: 42px !important;
+            height: 40px !important;
+            border-radius: 12px !important;
+            padding: 0 8px !important;
+            font-size: 12px !important;
+          }
+          .desktop-only-action {
+            display: none !important;
+          }
         }
       `}</style>
     </div>
