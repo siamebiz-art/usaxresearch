@@ -56,6 +56,35 @@ create policy "users can read own referrals" on public.referrals for select usin
 create policy "service can insert referrals" on public.referrals for insert with check (true);
 create policy "service can update referrals" on public.referrals for update using (true);
 
+-- watchlists
+create table if not exists public.user_watchlists (
+  user_id       uuid primary key references public.profiles(id) on delete cascade,
+  tickers       text[] not null default '{}',
+  alert_tickers text[] not null default '{}',
+  updated_at    timestamptz not null default now(),
+  created_at    timestamptz not null default now()
+);
+
+alter table public.user_watchlists enable row level security;
+create policy "users can read own watchlist" on public.user_watchlists for select using (auth.uid() = user_id);
+create policy "users can insert own watchlist" on public.user_watchlists for insert with check (auth.uid() = user_id);
+create policy "users can update own watchlist" on public.user_watchlists for update using (auth.uid() = user_id);
+create policy "users can delete own watchlist" on public.user_watchlists for delete using (auth.uid() = user_id);
+
+-- portfolios
+create table if not exists public.user_portfolios (
+  user_id    uuid primary key references public.profiles(id) on delete cascade,
+  positions  jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+alter table public.user_portfolios enable row level security;
+create policy "users can read own portfolio" on public.user_portfolios for select using (auth.uid() = user_id);
+create policy "users can insert own portfolio" on public.user_portfolios for insert with check (auth.uid() = user_id);
+create policy "users can update own portfolio" on public.user_portfolios for update using (auth.uid() = user_id);
+create policy "users can delete own portfolio" on public.user_portfolios for delete using (auth.uid() = user_id);
+
 -- auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

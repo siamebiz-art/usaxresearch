@@ -1,11 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Plus, X, TrendingUp, TrendingDown, Briefcase } from "lucide-react";
+import { loadUserPortfolio, saveUserPortfolio, type PortfolioPosition } from "@/lib/user-data";
 
-type Position = {
-  id: number; ticker: string; name: string; color: string;
-  shares: number; avgCost: number; price: number; sector: string;
-};
+type Position = PortfolioPosition;
 
 const SECTOR_COLORS: Record<string, string> = {
   "Technology":    "#3B82F6",
@@ -44,16 +42,28 @@ export default function PortfolioPage({ lang }: { lang: string }) {
   const [tab, setTab]                = useState<"holdings"|"allocation">("holdings");
 
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(LS_PORTFOLIO_KEY);
-      if (s) setPositionsRaw(JSON.parse(s));
-    } catch {}
+    const loadLocalPortfolio = () => {
+      try {
+        const s = localStorage.getItem(LS_PORTFOLIO_KEY);
+        if (s) setPositionsRaw(JSON.parse(s));
+      } catch {}
+    };
+    const loadCloudPortfolio = async () => {
+      const cloud = await loadUserPortfolio();
+      if (!cloud) return;
+      setPositionsRaw(cloud);
+      try { localStorage.setItem(LS_PORTFOLIO_KEY, JSON.stringify(cloud)); } catch {}
+    };
+    const timer = window.setTimeout(loadLocalPortfolio, 0);
+    loadCloudPortfolio();
+    return () => window.clearTimeout(timer);
   }, []);
 
   const setPositions = (updater: (prev: Position[]) => Position[]) => {
     setPositionsRaw(prev => {
       const next = updater(prev);
       try { localStorage.setItem(LS_PORTFOLIO_KEY, JSON.stringify(next)); } catch {}
+      void saveUserPortfolio(next);
       return next;
     });
   };

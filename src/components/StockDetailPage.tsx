@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown, Star, Bell, ExternalLink } from "lucide-react";
+import { addAlertTickerToUserWatchlist, addTickerToUserWatchlist } from "@/lib/user-data";
 
 // ── Stock database ────────────────────────────────────────────
 const DETAIL_DB: Record<string, any> = {
@@ -51,9 +52,11 @@ function saveTickerToWatchlist(ticker: string) {
       : [];
     const next = existing.includes(normalized) ? existing : [...existing, normalized];
     localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([...new Set(next)]));
+    void addTickerToUserWatchlist(normalized);
     window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
   } catch {
     localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([normalized]));
+    void addTickerToUserWatchlist(normalized);
     window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
   }
 }
@@ -107,6 +110,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
   const d  = getDefault(ticker);
   const [tab, setTab] = useState<Tab>("overview");
   const [saved, setSaved] = useState(false);
+  const [alertSaved, setAlertSaved] = useState(false);
 
   const TAB_LABELS: Record<Tab, string> = {
     overview:   TH ? "ภาพรวม"   : "Overview",
@@ -191,10 +195,35 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
             style={{ display: "flex", alignItems: "center", gap: 7, background: saved ? "var(--green)" : "linear-gradient(135deg, var(--accent), var(--cyan))", border: "none", borderRadius: 11, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             <Star size={14} /> {TH ? "เพิ่มใน Watchlist" : "Add to Watchlist"}
           </button>
-          <button style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 18px", color: "var(--text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-            <Bell size={14} /> {TH ? "ตั้งแจ้งเตือน" : "Set Alert"}
+          <button
+            onClick={() => {
+              const normalized = ticker.trim().toUpperCase();
+              try {
+                const listParsed = JSON.parse(localStorage.getItem(LS_WATCHLIST_KEY) ?? "[]");
+                const listExisting = Array.isArray(listParsed)
+                  ? listParsed.map((item: unknown) => String(item).trim().toUpperCase()).filter(Boolean)
+                  : [];
+                localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([...new Set([...listExisting, normalized])]));
+
+                const parsed = JSON.parse(localStorage.getItem("usax-watchlist-alerts-v1") ?? "[]");
+                const existing = Array.isArray(parsed)
+                  ? parsed.map((item: unknown) => String(item).trim().toUpperCase()).filter(Boolean)
+                  : [];
+                localStorage.setItem("usax-watchlist-alerts-v1", JSON.stringify([...new Set([...existing, normalized])]));
+              } catch {
+                localStorage.setItem("usax-watchlist-alerts-v1", JSON.stringify([normalized]));
+              }
+              void addAlertTickerToUserWatchlist(normalized);
+              window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
+              setAlertSaved(true);
+              window.setTimeout(() => setAlertSaved(false), 1400);
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 7, background: alertSaved ? "var(--green)" : "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 18px", color: alertSaved ? "#fff" : "var(--text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <Bell size={14} /> {alertSaved ? (TH ? "ตั้งแล้ว" : "Alert Set") : (TH ? "ตั้งแจ้งเตือน" : "Set Alert")}
           </button>
-          <button style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 18px", color: "var(--muted)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+          <button
+            onClick={() => window.open(`https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}`, "_blank", "noopener,noreferrer")}
+            style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 18px", color: "var(--muted)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
             <ExternalLink size={14} /> {TH ? "ดูบน Yahoo Finance" : "Yahoo Finance"}
           </button>
         </div>

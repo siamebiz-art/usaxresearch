@@ -272,3 +272,17 @@
 4. เปิดหรือซ่อนหน้า hidden อย่างตั้งใจใน navigation/search
 5. แก้ lint baseline ให้ผ่านทีละกลุ่ม: admin/API, AppLayout, client pages
 6. เพิ่ม QA checklist สำหรับ mobile, empty states, loading states, และ disclaimer visibility
+
+## Implementation Update 2026-07-01
+
+- Added Supabase schema definitions for `user_watchlists` and `user_portfolios` with per-user RLS policies.
+- Added `src/lib/user-data.ts` as a shared client helper for user watchlist and portfolio persistence.
+- Watchlist now loads cloud data when the user is logged in, keeps localStorage as fallback/cache, and syncs changes back to Supabase.
+- Screener and Stock Detail save-to-watchlist actions now update both localStorage and Supabase.
+- Portfolio now loads/saves positions from Supabase per user while preserving localStorage fallback.
+- Stock Detail `Set Alert` now adds the ticker to Watchlist alerts, and `Yahoo Finance` opens the ticker page.
+- Build check passed with `npm run build`.
+
+Deployment note:
+
+- The SQL in `supabase/schema.sql` must be applied to the live Supabase project before cross-device Watchlist/Portfolio sync works in production. Until then, the app still falls back to localStorage.

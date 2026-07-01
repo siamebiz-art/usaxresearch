@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Plus, X, Bell, BellOff, Search, TrendingUp, TrendingDown, Star } from "lucide-react";
+import { loadUserWatchlist, saveUserWatchlist } from "@/lib/user-data";
 
 type WatchStock = {
   name: string;
@@ -151,7 +152,20 @@ export default function WatchlistPage({ lang }: { lang: string }) {
       setListRaw(readTickerList(LS_LIST_KEY, DEFAULT_LIST));
       setAlertsRaw(new Set(readTickerList(LS_ALERTS_KEY, DEFAULT_ALERTS)));
     };
+    const loadCloudWatchlist = async () => {
+      const cloud = await loadUserWatchlist();
+      if (!cloud) return;
+      const nextList = cloud.tickers.length ? cloud.tickers : DEFAULT_LIST;
+      const nextAlerts = cloud.alerts.length ? cloud.alerts : [];
+      setListRaw(nextList);
+      setAlertsRaw(new Set(nextAlerts));
+      try {
+        localStorage.setItem(LS_LIST_KEY, JSON.stringify(nextList));
+        localStorage.setItem(LS_ALERTS_KEY, JSON.stringify(nextAlerts));
+      } catch {}
+    };
     const timer = window.setTimeout(loadSavedWatchlist, 0);
+    loadCloudWatchlist();
     window.addEventListener("usax-watchlist-updated", loadSavedWatchlist);
     return () => {
       window.clearTimeout(timer);
@@ -163,6 +177,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
     setListRaw(prev => {
       const next = normalizeTickerList(updater(prev));
       try { localStorage.setItem(LS_LIST_KEY, JSON.stringify(next)); } catch {}
+      void saveUserWatchlist(next, [...alerts]);
       return next;
     });
   };
@@ -170,6 +185,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
     setAlertsRaw(prev => {
       const next = new Set(normalizeTickerList([...updater(prev)]));
       try { localStorage.setItem(LS_ALERTS_KEY, JSON.stringify([...next])); } catch {}
+      void saveUserWatchlist(list, [...next]);
       return next;
     });
   };

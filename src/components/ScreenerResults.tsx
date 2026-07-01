@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { SCREENERS } from "./DashboardHome";
+import { addTickerToUserWatchlist } from "@/lib/user-data";
 
 // ── Stock Logo ────────────────────────────────────────────────
 function StockLogo({ ticker, size = 36 }: { ticker: string; size?: number }) {
@@ -149,9 +150,11 @@ function saveTickerToWatchlist(ticker: string) {
       : [];
     const next = existing.includes(normalized) ? existing : [...existing, normalized];
     localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([...new Set(next)]));
+    void addTickerToUserWatchlist(normalized);
     window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
   } catch {
     localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([normalized]));
+    void addTickerToUserWatchlist(normalized);
     window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
   }
 }
