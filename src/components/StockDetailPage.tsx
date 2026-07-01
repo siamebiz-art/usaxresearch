@@ -193,7 +193,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
               window.setTimeout(() => setSaved(false), 1400);
             }}
             style={{ display: "flex", alignItems: "center", gap: 7, background: saved ? "var(--green)" : "linear-gradient(135deg, var(--accent), var(--cyan))", border: "none", borderRadius: 11, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            <Star size={14} /> {TH ? "เพิ่มใน Watchlist" : "Add to Watchlist"}
+            <Star size={14} /> {saved ? (TH ? "เพิ่มแล้ว" : "Added") : (TH ? "เพิ่มใน Watchlist" : "Add to Watchlist")}
           </button>
           <button
             onClick={() => {

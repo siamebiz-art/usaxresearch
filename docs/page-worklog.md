@@ -304,3 +304,9 @@ Deployment note:
 - Selector reads Watchlist from Supabase when logged in and from `localStorage` fallback when offline or unauthenticated.
 - If Watchlist is empty, Portfolio falls back to the built-in ticker templates.
 - Existing portfolio positions remain selectable for editing even when they are no longer in Watchlist.
+
+## Implementation Update 2026-07-01 - Watchlist Save UX
+
+- Save-to-Watchlist actions now keep users on the current page instead of navigating to AI Watchlist.
+- Screener result rows show an inline "Added" confirmation after saving.
+- Stock detail save button now shows the same added confirmation state.

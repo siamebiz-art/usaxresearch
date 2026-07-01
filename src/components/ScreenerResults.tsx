@@ -178,6 +178,7 @@ function ScoreRing({ score }: { score: number }) {
 // ── Stock Row ─────────────────────────────────────────────────
 function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number; color: string; lang: string; onViewDetail?: (ticker: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [saved, setSaved] = useState(false);
   return (
     <div>
       <div
@@ -227,10 +228,11 @@ function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number
               onClick={e => {
                 e.stopPropagation();
                 saveTickerToWatchlist(s.ticker);
-                window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "watchlist" } }));
+                setSaved(true);
+                window.setTimeout(() => setSaved(false), 1600);
               }}
-              style={{ background: "none", border: "1px solid var(--accent)", color: "var(--accent)", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              ⭐ {t("save_watchlist", lang)}
+              style={{ background: saved ? "var(--green)" : "none", border: saved ? "1px solid var(--green)" : "1px solid var(--accent)", color: saved ? "#fff" : "var(--accent)", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              ⭐ {saved ? (lang === "th" ? "เพิ่มแล้ว" : "Added") : t("save_watchlist", lang)}
             </button>
           </div>
         </div>
