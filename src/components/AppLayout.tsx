@@ -26,6 +26,7 @@ import EconomicCalendarPage from "./EconomicCalendarPage";
 import AnalysisPage from "./AnalysisPage";
 import IdeasPage from "./IdeasPage";
 import EducationPage from "./EducationPage";
+import { loadUserNotifications, markNotificationsRead, type UserNotification } from "@/lib/user-alerts";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -364,6 +365,38 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
   const initial = name[0].toUpperCase();
   const plan    = profile?.plan ?? "free";
   const label   = NAV_LABELS[active]?.[lang] ?? active;
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!user) {
+        setNotifications([]);
+        return;
+      }
+      const data = await loadUserNotifications(8);
+      setNotifications(data ?? []);
+    };
+
+    loadNotifications();
+    window.addEventListener("usax-notifications-updated", loadNotifications);
+    const timer = window.setInterval(loadNotifications, 60_000);
+    return () => {
+      window.removeEventListener("usax-notifications-updated", loadNotifications);
+      window.clearInterval(timer);
+    };
+  }, [user]);
+
+  const unreadCount = notifications.filter((item) => !item.read_at).length;
+
+  const openNotifications = async () => {
+    setNotifOpen((next) => !next);
+    if (unreadCount > 0) {
+      await markNotificationsRead();
+      const data = await loadUserNotifications(8);
+      setNotifications(data ?? []);
+    }
+  };
 
   return (
     <div className="app-topbar" style={{ height: 60, background: "var(--bg-card)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0 }}>
@@ -408,10 +441,32 @@ function TopBar({ active, onMenuClick, sidebarOpen, onThemeToggle, theme, user, 
 
         {/* Notifications */}
         <div className="desktop-only-action" style={{ position: "relative" }}>
-          <button style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "7px", cursor: "pointer", color: "var(--muted)", display: "flex", alignItems: "center" }}>
+          <button onClick={openNotifications} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "7px", cursor: "pointer", color: "var(--muted)", display: "flex", alignItems: "center" }}>
             <Bell size={15} />
           </button>
-          <span style={{ position: "absolute", top: -4, right: -4, background: "var(--red)", color: "#fff", borderRadius: 99, fontSize: 8.5, fontWeight: 800, padding: "1px 4px", lineHeight: 1.4, minWidth: 14, textAlign: "center" }}>4</span>
+          {unreadCount > 0 && (
+            <span style={{ position: "absolute", top: -4, right: -4, background: "var(--red)", color: "#fff", borderRadius: 99, fontSize: 8.5, fontWeight: 800, padding: "1px 4px", lineHeight: 1.4, minWidth: 14, textAlign: "center" }}>{unreadCount}</span>
+          )}
+          {notifOpen && (
+            <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 320, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "var(--shadow-md)", zIndex: 2000, overflow: "hidden" }}>
+              <div style={{ padding: "11px 14px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{lang === "th" ? "การแจ้งเตือน" : "Notifications"}</span>
+                <button onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "alerts" } }))} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  {lang === "th" ? "ดูทั้งหมด" : "View all"}
+                </button>
+              </div>
+              {notifications.length === 0 ? (
+                <div style={{ padding: 18, color: "var(--muted)", fontSize: 12, textAlign: "center" }}>{lang === "th" ? "ยังไม่มีการแจ้งเตือน" : "No notifications yet"}</div>
+              ) : (
+                notifications.map((item, index) => (
+                  <div key={item.id} style={{ padding: "11px 14px", borderBottom: index < notifications.length - 1 ? "1px solid var(--border)" : "none" }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--text)", marginBottom: 3 }}>{item.title}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.45 }}>{item.body}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* User */}

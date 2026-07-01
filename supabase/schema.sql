@@ -85,6 +85,50 @@ create policy "users can insert own portfolio" on public.user_portfolios for ins
 create policy "users can update own portfolio" on public.user_portfolios for update using (auth.uid() = user_id);
 create policy "users can delete own portfolio" on public.user_portfolios for delete using (auth.uid() = user_id);
 
+-- alerts
+create table if not exists public.user_alerts (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references public.profiles(id) on delete cascade,
+  ticker          text not null,
+  type            text not null check (type in ('price_above', 'price_below')),
+  target_value    numeric not null,
+  status          text not null default 'active' check (status in ('active', 'triggered', 'paused')),
+  last_price      numeric,
+  last_checked_at timestamptz,
+  triggered_at    timestamptz,
+  updated_at      timestamptz not null default now(),
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists user_alerts_active_idx on public.user_alerts(status, ticker);
+create index if not exists user_alerts_user_idx on public.user_alerts(user_id, created_at desc);
+
+alter table public.user_alerts enable row level security;
+create policy "users can read own alerts" on public.user_alerts for select using (auth.uid() = user_id);
+create policy "users can insert own alerts" on public.user_alerts for insert with check (auth.uid() = user_id);
+create policy "users can update own alerts" on public.user_alerts for update using (auth.uid() = user_id);
+create policy "users can delete own alerts" on public.user_alerts for delete using (auth.uid() = user_id);
+
+-- in-app notifications
+create table if not exists public.user_notifications (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  alert_id   uuid references public.user_alerts(id) on delete set null,
+  ticker     text not null,
+  title      text not null,
+  body       text not null,
+  price      numeric,
+  read_at    timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists user_notifications_user_idx on public.user_notifications(user_id, created_at desc);
+create index if not exists user_notifications_unread_idx on public.user_notifications(user_id, read_at) where read_at is null;
+
+alter table public.user_notifications enable row level security;
+create policy "users can read own notifications" on public.user_notifications for select using (auth.uid() = user_id);
+create policy "users can update own notifications" on public.user_notifications for update using (auth.uid() = user_id);
+
 -- auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

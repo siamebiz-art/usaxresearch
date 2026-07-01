@@ -120,6 +120,15 @@ button, input, select, textarea {
     grid-template-columns: 1fr !important;
   }
 
+  .alert-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .alert-form-grid button {
+    justify-content: center;
+    width: 100%;
+  }
+
   .portfolio-form-grid button {
     justify-content: center;
     width: 100%;

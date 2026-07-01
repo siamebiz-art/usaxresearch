@@ -360,3 +360,18 @@ Deployment note:
 - Setting an alert from Stock Detail also updates the Watchlist saved state immediately.
 - Saved-state buttons listen for `usax-watchlist-updated` so changes from other pages refresh the button state.
 - Build check passed with `npm run build`.
+
+## Implementation Update 2026-07-01 - Real In-App Price Alerts
+
+- Added Supabase schema for `user_alerts` and `user_notifications` with user-scoped RLS policies.
+- Rebuilt AI Alerts to load, create, pause, resume, and delete user price alerts from Supabase with local fallback when unauthenticated.
+- Added `/api/cron/check-alerts` to check active price alerts against Yahoo Finance quotes and create in-app notifications when targets are hit.
+- Added Vercel cron config to run the alert checker every 15 minutes.
+- Topbar notification bell now loads real unread in-app notifications and opens a latest-notifications dropdown.
+- Added shared alert helpers in `src/lib/user-alerts.ts`.
+- Build check passed with `npm run build`.
+
+Deployment note:
+
+- Apply the updated `supabase/schema.sql` to Supabase before production alerts work.
+- Add `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` to Vercel environment variables for `/api/cron/check-alerts`.

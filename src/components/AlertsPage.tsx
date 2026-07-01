@@ -1,262 +1,203 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Bell, Plus, X, TrendingUp, TrendingDown, Zap, Star, Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Bell, Check, Pause, Play, Plus, RefreshCw, Trash2, TrendingDown, TrendingUp, X } from "lucide-react";
+import {
+  createUserAlert,
+  deleteUserAlert,
+  loadUserAlerts,
+  readLocalAlerts,
+  updateUserAlertStatus,
+  type UserAlert,
+  type UserAlertType,
+} from "@/lib/user-alerts";
 
-type AlertType = "price_above" | "price_below" | "score_above" | "score_below" | "earnings";
-type AlertStatus = "active" | "triggered" | "paused";
+const POPULAR_TICKERS = ["NVDA", "AAPL", "MSFT", "TSLA", "AMZN", "META", "CRWD", "ZS", "AMD", "GOOG"];
 
-type Alert = {
-  id: number; ticker: string; type: AlertType;
-  value: string; status: AlertStatus; created: string;
-};
-
-const TKR_CLR: Record<string, string> = {
-  NVDA: "#76B900", AAPL: "#555", MSFT: "#00A1F1", TSLA: "#CC0000",
-  AMZN: "#FF9900", META: "#0867FC", CRWD: "#C1121F", ZS: "#005DAA",
-};
-
-const INIT_ALERTS: Alert[] = [
-  { id: 1, ticker: "NVDA", type: "price_above", value: "1200",  status: "active",    created: "2 วันที่แล้ว" },
-  { id: 2, ticker: "TSLA", type: "price_below", value: "150",   status: "active",    created: "3 วันที่แล้ว" },
-  { id: 3, ticker: "AAPL", type: "score_above", value: "90",    status: "active",    created: "5 วันที่แล้ว" },
-  { id: 4, ticker: "CRWD", type: "earnings",    value: "—",     status: "triggered", created: "1 สัปดาห์ที่แล้ว" },
-  { id: 5, ticker: "MSFT", type: "price_above", value: "450",   status: "triggered", created: "2 สัปดาห์ที่แล้ว" },
-  { id: 6, ticker: "ZS",   type: "price_below", value: "170",   status: "paused",    created: "3 สัปดาห์ที่แล้ว" },
-];
-
-const ALERT_TYPES: { value: AlertType; label_th: string; label_en: string }[] = [
-  { value: "price_above", label_th: "ราคาขึ้นถึง",      label_en: "Price rises to"     },
-  { value: "price_below", label_th: "ราคาลงถึง",        label_en: "Price drops to"     },
-  { value: "score_above", label_th: "AI Score เกิน",    label_en: "AI Score above"     },
-  { value: "score_below", label_th: "AI Score ต่ำกว่า", label_en: "AI Score below"     },
-  { value: "earnings",    label_th: "ก่อน Earnings",    label_en: "Before Earnings"    },
-];
-
-const POPULAR_TICKERS = ["NVDA", "AAPL", "MSFT", "TSLA", "AMZN", "META", "CRWD", "ZS"];
-
-function typeIcon(type: AlertType) {
-  if (type === "price_above") return <TrendingUp size={14} color="var(--green)" />;
-  if (type === "price_below") return <TrendingDown size={14} color="var(--red)" />;
-  if (type === "score_above") return <Star size={14} color="var(--accent)" />;
-  if (type === "score_below") return <Star size={14} color="var(--faint)" />;
-  return <Zap size={14} color="var(--orange)" />;
+function conditionLabel(type: UserAlertType, value: number, lang: string) {
+  const price = `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (type === "price_above") return lang === "th" ? `ราคาขึ้นถึง ${price}` : `Price rises to ${price}`;
+  return lang === "th" ? `ราคาลงถึง ${price}` : `Price drops to ${price}`;
 }
 
-function typeLabel(type: AlertType, value: string, lang: string) {
-  const TH = lang === "th";
-  const t = ALERT_TYPES.find(a => a.value === type);
-  const label = TH ? t?.label_th : t?.label_en;
-  if (type === "earnings") return TH ? "แจ้งเตือนก่อน Earnings 1 วัน" : "Alert 1 day before Earnings";
-  const unit = type.includes("score") ? "/100" : "$";
-  return `${label} ${unit}${value}`;
+function statusLabel(status: UserAlert["status"], lang: string) {
+  if (status === "triggered") return lang === "th" ? "แจ้งแล้ว" : "Triggered";
+  if (status === "paused") return lang === "th" ? "พักไว้" : "Paused";
+  return lang === "th" ? "ใช้งาน" : "Active";
 }
 
-function StatusBadge({ status, lang }: { status: AlertStatus; lang: string }) {
-  const TH = lang === "th";
-  const cfg = {
-    active:    { color: "#22C55E", bg: "rgba(34,197,94,0.1)",   label_th: "ใช้งาน",    label_en: "Active"    },
-    triggered: { color: "#F97316", bg: "rgba(249,115,22,0.1)",  label_th: "แจ้งแล้ว",  label_en: "Triggered" },
-    paused:    { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", label_th: "หยุดชั่วคราว",label_en: "Paused"   },
-  };
-  const c = cfg[status];
-  return (
-    <span style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, borderRadius: 5, padding: "2px 8px" }}>
-      {TH ? c.label_th : c.label_en}
-    </span>
-  );
+function statusColor(status: UserAlert["status"]) {
+  if (status === "triggered") return "#F97316";
+  if (status === "paused") return "var(--faint)";
+  return "var(--green)";
 }
-
-const LS_ALERTS_KEY = "usax-ai-alerts-v1";
 
 export default function AlertsPage({ lang }: { lang: string }) {
   const TH = lang === "th";
-  const [alerts,    setAlertsRaw] = useState<Alert[]>(INIT_ALERTS);
-  const [tab,       setTab]       = useState<"active" | "triggered">("active");
-  const [showForm,  setShowForm]  = useState(false);
-  const [form,      setForm]      = useState({ ticker: "NVDA", type: "price_above" as AlertType, value: "" });
-  const [saved,     setSaved]     = useState(false);
+  const [alerts, setAlerts] = useState<UserAlert[]>([]);
+  const [tab, setTab] = useState<"active" | "triggered">("active");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ ticker: "NVDA", type: "price_above" as UserAlertType, target: "" });
+  const [syncState, setSyncState] = useState<"loading" | "synced" | "local" | "error">("loading");
+  const [saved, setSaved] = useState(false);
+
+  const refreshAlerts = async () => {
+    setSyncState("loading");
+    const cloud = await loadUserAlerts();
+    if (cloud) {
+      setAlerts(cloud);
+      setSyncState("synced");
+      return;
+    }
+    setAlerts(readLocalAlerts());
+    setSyncState("local");
+  };
 
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(LS_ALERTS_KEY);
-      if (s) setAlertsRaw(JSON.parse(s));
-    } catch {}
+    refreshAlerts();
+    window.addEventListener("usax-alerts-updated", refreshAlerts);
+    return () => window.removeEventListener("usax-alerts-updated", refreshAlerts);
   }, []);
 
-  const setAlerts = (updater: (prev: Alert[]) => Alert[]) => {
-    setAlertsRaw(prev => {
-      const next = updater(prev);
-      try { localStorage.setItem(LS_ALERTS_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
+  const activeAlerts = useMemo(() => alerts.filter((alert) => alert.status === "active" || alert.status === "paused"), [alerts]);
+  const triggeredAlerts = useMemo(() => alerts.filter((alert) => alert.status === "triggered"), [alerts]);
+  const displayAlerts = tab === "active" ? activeAlerts : triggeredAlerts;
 
-  const activeAlerts    = alerts.filter(a => a.status === "active" || a.status === "paused");
-  const triggeredAlerts = alerts.filter(a => a.status === "triggered");
-  const displayAlerts   = tab === "active" ? activeAlerts : triggeredAlerts;
-
-  const removeAlert = (id: number) => setAlerts(p => p.filter(a => a.id !== id));
-  const togglePause = (id: number) => setAlerts(p => p.map(a => a.id === id
-    ? { ...a, status: a.status === "active" ? "paused" : "active" as AlertStatus }
-    : a));
-
-  const createAlert = () => {
-    if (!form.value && form.type !== "earnings") return;
-    const newAlert: Alert = {
-      id: Date.now(), ticker: form.ticker, type: form.type,
-      value: form.value || "—", status: "active",
-      created: TH ? "เพิ่งสร้าง" : "Just now",
-    };
-    setAlerts(p => [newAlert, ...p]);
-    setForm({ ticker: "NVDA", type: "price_above", value: "" });
+  const createAlert = async () => {
+    const target = Number(form.target);
+    if (!Number.isFinite(target) || target <= 0) return;
+    setSyncState("loading");
+    const result = await createUserAlert({ ticker: form.ticker, type: form.type, target_value: target });
+    if (!result.ok) {
+      setSyncState("error");
+      return;
+    }
+    setForm({ ticker: "NVDA", type: "price_above", target: "" });
     setShowForm(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    window.setTimeout(() => setSaved(false), 1800);
+    await refreshAlerts();
   };
+
+  const togglePause = async (alert: UserAlert) => {
+    await updateUserAlertStatus(alert.id, alert.status === "paused" ? "active" : "paused");
+    await refreshAlerts();
+  };
+
+  const removeAlert = async (id: string) => {
+    await deleteUserAlert(id);
+    await refreshAlerts();
+  };
+
+  const syncLabel =
+    syncState === "loading"
+      ? TH ? "กำลังโหลด" : "Loading"
+      : syncState === "synced"
+        ? TH ? "บันทึกบนคลาวด์" : "Cloud synced"
+        : syncState === "local"
+          ? TH ? "โหมดเครื่องนี้" : "Local mode"
+          : TH ? "ซิงก์มีปัญหา" : "Sync issue";
 
   return (
     <div className="fade-up">
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
+      <div className="page-header-wrap" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20, gap: 14 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--text)", margin: 0 }}>
-            {TH ? "AI Alerts" : "AI Alerts"}
-          </h1>
+          <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--text)", margin: 0 }}>AI Alerts</h1>
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
-            {TH ? `แจ้งเตือนอัตโนมัติ ${activeAlerts.length} รายการ` : `${activeAlerts.length} active alerts`}
+            {TH ? `แจ้งเตือนราคาจริง ${activeAlerts.length} รายการ` : `${activeAlerts.length} active price alerts`}
           </p>
         </div>
-        <button onClick={() => setShowForm(!showForm)}
-          style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--accent)", border: "none", borderRadius: 11, padding: "10px 18px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-          <Plus size={15} />
-          {TH ? "สร้างการแจ้งเตือน" : "New Alert"}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, border: "1px solid var(--border)", borderRadius: 999, padding: "8px 12px", color: syncState === "error" ? "var(--red)" : "var(--green)", fontSize: 12, fontWeight: 700 }}>
+            {syncState === "loading" ? <RefreshCw size={13} /> : <Check size={13} />}
+            {syncLabel}
+          </div>
+          <button onClick={() => setShowForm((next) => !next)}
+            style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--accent)", border: "none", borderRadius: 11, padding: "10px 18px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+            {showForm ? <X size={15} /> : <Plus size={15} />}
+            {showForm ? (TH ? "ยกเลิก" : "Cancel") : TH ? "สร้างแจ้งเตือน" : "New Alert"}
+          </button>
+        </div>
       </div>
 
-      {/* Create Alert Form */}
       {showForm && (
-        <div style={{ background: "var(--bg-card)", border: "1.5px solid var(--accent)", borderRadius: 16, padding: "20px 22px", marginBottom: 18 }} className="fade-up">
-          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginBottom: 16 }}>
-            {TH ? "สร้างการแจ้งเตือนใหม่" : "Create New Alert"}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr 1fr auto", gap: 12, alignItems: "end" }}>
-            {/* Ticker */}
+        <div style={{ background: "var(--bg-card)", border: "1.5px solid var(--accent)", borderRadius: 12, padding: "18px 20px", marginBottom: 18 }} className="fade-up">
+          <div className="alert-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr 1fr auto", gap: 12, alignItems: "end" }}>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 6 }}>
-                {TH ? "หุ้น" : "Stock"}
-              </label>
-              <select value={form.ticker} onChange={e => setForm(p => ({ ...p, ticker: e.target.value }))}
-                style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none", cursor: "pointer" }}>
-                {POPULAR_TICKERS.map(t => <option key={t} value={t}>{t}</option>)}
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: 6 }}>{TH ? "หุ้น" : "Stock"}</label>
+              <select value={form.ticker} onChange={(event) => setForm((prev) => ({ ...prev, ticker: event.target.value }))}
+                style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none" }}>
+                {POPULAR_TICKERS.map((ticker) => <option key={ticker} value={ticker}>{ticker}</option>)}
               </select>
             </div>
-            {/* Type */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 6 }}>
-                {TH ? "เงื่อนไข" : "Condition"}
-              </label>
-              <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AlertType }))}
-                style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none", cursor: "pointer" }}>
-                {ALERT_TYPES.map(a => (
-                  <option key={a.value} value={a.value}>{TH ? a.label_th : a.label_en}</option>
-                ))}
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: 6 }}>{TH ? "เงื่อนไข" : "Condition"}</label>
+              <select value={form.type} onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value as UserAlertType }))}
+                style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none" }}>
+                <option value="price_above">{TH ? "ราคาขึ้นถึง" : "Price rises to"}</option>
+                <option value="price_below">{TH ? "ราคาลงถึง" : "Price drops to"}</option>
               </select>
             </div>
-            {/* Value */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 6 }}>
-                {form.type === "earnings" ? "—" : (form.type.includes("score") ? "Score (0-100)" : (TH ? "ราคา ($)" : "Price ($)"))}
-              </label>
-              <input
-                value={form.value}
-                onChange={e => setForm(p => ({ ...p, value: e.target.value }))}
-                placeholder={form.type === "earnings" ? "—" : form.type.includes("score") ? "90" : "1200"}
-                disabled={form.type === "earnings"}
-                type="number"
-                style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none", boxSizing: "border-box", opacity: form.type === "earnings" ? 0.5 : 1 }}
-              />
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: 6 }}>{TH ? "ราคาเป้าหมาย ($)" : "Target price ($)"}</label>
+              <input type="number" min="0" step="0.01" value={form.target} onChange={(event) => setForm((prev) => ({ ...prev, target: event.target.value }))} placeholder="200.00"
+                style={{ width: "100%", background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
             </div>
-            {/* Submit */}
             <button onClick={createAlert}
-              style={{ background: saved ? "var(--emerald)" : "var(--accent)", border: "none", borderRadius: 10, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: saved ? "var(--green)" : "var(--accent)", border: "none", borderRadius: 8, padding: "10px 18px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               {saved ? <Check size={14} /> : <Bell size={14} />}
-              {saved ? (TH ? "บันทึกแล้ว" : "Saved!") : (TH ? "บันทึก" : "Save")}
+              {saved ? (TH ? "บันทึกแล้ว" : "Saved") : TH ? "บันทึก" : "Save"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, background: "var(--bg-raised)", borderRadius: 11, padding: 3, width: "fit-content", marginBottom: 16 }}>
-        {(["active", "triggered"] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ padding: "7px 18px", borderRadius: 8, border: "none", background: tab === t ? "var(--bg-card)" : "transparent", color: tab === t ? "var(--text)" : "var(--muted)", fontWeight: tab === t ? 700 : 400, fontSize: 13, cursor: "pointer", boxShadow: tab === t ? "var(--shadow)" : "none" }}>
-            {t === "active"
-              ? (TH ? `ใช้งาน (${activeAlerts.length})` : `Active (${activeAlerts.length})`)
-              : (TH ? `แจ้งแล้ว (${triggeredAlerts.length})` : `Triggered (${triggeredAlerts.length})`)}
+      <div style={{ display: "flex", gap: 4, background: "var(--bg-raised)", borderRadius: 8, padding: 3, width: "fit-content", marginBottom: 14 }}>
+        {(["active", "triggered"] as const).map((nextTab) => (
+          <button key={nextTab} onClick={() => setTab(nextTab)}
+            style={{ padding: "7px 18px", borderRadius: 6, border: "none", background: tab === nextTab ? "var(--bg-card)" : "transparent", color: tab === nextTab ? "var(--text)" : "var(--muted)", fontWeight: tab === nextTab ? 700 : 400, fontSize: 13, cursor: "pointer", boxShadow: tab === nextTab ? "var(--shadow)" : "none" }}>
+            {nextTab === "active" ? (TH ? "กำลังใช้งาน" : "Active") : TH ? "แจ้งแล้ว" : "Triggered"}
           </button>
         ))}
       </div>
 
-      {/* Alert list */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
         {displayAlerts.length === 0 ? (
-          <div style={{ padding: "60px 24px", textAlign: "center", color: "var(--faint)" }}>
-            <Bell size={36} style={{ marginBottom: 12 }} />
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--muted)" }}>
-              {TH ? "ยังไม่มีการแจ้งเตือน" : "No alerts here"}
-            </div>
-            <div style={{ fontSize: 12, marginTop: 4 }}>
-              {TH ? "สร้างการแจ้งเตือนใหม่ด้านบน" : "Create a new alert above"}
-            </div>
+          <div style={{ padding: "42px 20px", textAlign: "center", color: "var(--muted)" }}>
+            <Bell size={34} style={{ marginBottom: 12, color: "var(--faint)" }} />
+            <div style={{ fontSize: 15, fontWeight: 800 }}>{TH ? "ยังไม่มีแจ้งเตือน" : "No alerts yet"}</div>
+            <div style={{ fontSize: 12, marginTop: 5 }}>{TH ? "สร้างแจ้งเตือนราคาเพื่อให้ระบบตรวจให้อัตโนมัติ" : "Create a price alert and the cron checker will monitor it."}</div>
           </div>
         ) : (
-          displayAlerts.map((a, idx) => (
-            <div key={a.id}
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderBottom: idx < displayAlerts.length - 1 ? "1px solid var(--border)" : "none", transition: "background .12s" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-raised)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              {/* Type icon */}
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--bg-raised)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {typeIcon(a.type)}
-              </div>
-              {/* Ticker badge */}
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: TKR_CLR[a.ticker] ?? "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-                {a.ticker.slice(0, 4)}
-              </div>
-              {/* Info */}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
-                  {a.ticker} — {typeLabel(a.type, a.value, lang)}
+          displayAlerts.map((alert, index) => (
+            <div key={alert.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 14, alignItems: "center", padding: "14px 18px", borderBottom: index < displayAlerts.length - 1 ? "1px solid var(--border)" : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: alert.type === "price_above" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {alert.type === "price_above" ? <TrendingUp size={18} color="var(--green)" /> : <TrendingDown size={18} color="var(--red)" />}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 2 }}>
-                  {TH ? "สร้างเมื่อ" : "Created"} {a.created}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 14, fontWeight: 900, color: "var(--text)" }}>{alert.ticker}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: statusColor(alert.status), background: `${statusColor(alert.status)}18`, borderRadius: 6, padding: "2px 8px" }}>{statusLabel(alert.status, lang)}</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 3 }}>{conditionLabel(alert.type, alert.target_value, lang)}</div>
+                  {alert.last_price ? <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 2 }}>{TH ? "ราคาล่าสุด" : "Last price"} ${alert.last_price.toFixed(2)}</div> : null}
                 </div>
               </div>
-              {/* Status */}
-              <StatusBadge status={a.status} lang={lang} />
-              {/* Actions */}
-              <div style={{ display: "flex", gap: 6 }}>
-                {a.status !== "triggered" && (
-                  <button onClick={() => togglePause(a.id)} title={a.status === "active" ? (TH ? "หยุดชั่วคราว" : "Pause") : (TH ? "เปิดใช้งาน" : "Resume")}
-                    style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", fontSize: 11, color: "var(--muted)", cursor: "pointer", fontWeight: 600 }}>
-                    {a.status === "active" ? (TH ? "หยุด" : "Pause") : (TH ? "เปิด" : "Resume")}
-                  </button>
-                )}
-                <button onClick={() => removeAlert(a.id)}
-                  style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "6px", color: "var(--faint)", cursor: "pointer", display: "flex" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "var(--red)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "var(--faint)")}>
-                  <X size={13} />
+              {alert.status !== "triggered" && (
+                <button onClick={() => togglePause(alert)} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: 8, color: "var(--muted)", cursor: "pointer", display: "flex" }}>
+                  {alert.status === "paused" ? <Play size={14} /> : <Pause size={14} />}
                 </button>
-              </div>
+              )}
+              <button onClick={() => removeAlert(alert.id)} style={{ background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 8, padding: 8, color: "var(--muted)", cursor: "pointer", display: "flex" }}>
+                <Trash2 size={14} />
+              </button>
             </div>
           ))
         )}
       </div>
 
-      <div style={{ marginTop: 14, fontSize: 11, color: "var(--faint)" }}>
-        ⚠️ {TH ? "การแจ้งเตือนขึ้นอยู่กับข้อมูลล่าช้า ไม่ใช่ Real-time (Plan ฟรี)" : "Alerts based on delayed data, not real-time (Free Plan)"}
+      <div style={{ marginTop: 14, fontSize: 11, color: "var(--faint)", lineHeight: 1.7 }}>
+        {TH ? "ระบบตรวจราคาโดย Cron ตามรอบที่ตั้งไว้บน Vercel ข้อมูลเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน" : "Alerts are checked by the Vercel cron schedule. Educational data only, not investment advice."}
       </div>
     </div>
   );
