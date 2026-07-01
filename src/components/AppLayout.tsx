@@ -494,9 +494,10 @@ function ScreenerPage({ selectedId, setSelectedId, lang }: {
             : "Choose a theme for AI to analyze and screen stocks — statistical tools only, not investment advice"}
         </p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
+      <div className="screener-card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
         {SCREENERS.map(sc => (
           <div key={sc.id}
+            className="screener-card"
             onClick={() => setSelectedId(sc.id)}
             style={{
               background: `linear-gradient(150deg, ${sc.gradFrom}, ${sc.gradTo})`,
@@ -514,17 +515,17 @@ function ScreenerPage({ selectedId, setSelectedId, lang }: {
               e.currentTarget.style.boxShadow = "";
             }}
           >
-            <div style={{ position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)", width: 130, height: 130, borderRadius: 99, background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 16, paddingTop: 4, filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.35))" }}>
+            <div className="screener-card-glow" style={{ position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)", width: 130, height: 130, borderRadius: 99, background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+            <div className="screener-card-icon" style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 16, paddingTop: 4, filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.35))" }}>
               {SCREENER_ICONS[sc.id]}
             </div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", lineHeight: 1.3, marginBottom: 6 }}>
+            <div className="screener-card-title" style={{ fontSize: 14, fontWeight: 800, color: "#fff", lineHeight: 1.3, marginBottom: 6 }}>
               {lang === "th" ? sc.label : sc.label_en}
             </div>
-            <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.62)", lineHeight: 1.5, marginBottom: 14, flex: 1 }}>
+            <div className="screener-card-desc" style={{ fontSize: 11.5, color: "rgba(255,255,255,0.62)", lineHeight: 1.5, marginBottom: 14, flex: 1 }}>
               {lang === "th" ? sc.desc : sc.desc_en}
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="screener-card-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 7, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: "#fff" }}>
                 {lang === "th" ? `พบ ${sc.count} ตัว` : `${sc.count} stocks`}
               </div>
@@ -827,6 +828,16 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       </div>
 
       <style>{`
+        @media (max-width: 1180px) {
+          .screener-card-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+        }
+        @media (max-width: 920px) {
+          .screener-card-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
         @media (max-width: 768px) {
           .mobile-menu-btn { display: flex !important; }
           .app-topbar {
@@ -910,6 +921,47 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
           }
           .desktop-only-action {
             display: none !important;
+          }
+          .screener-card-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .screener-card {
+            min-height: 0 !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+          }
+          .screener-card-glow {
+            width: 120px !important;
+            height: 120px !important;
+            left: auto !important;
+            right: -34px !important;
+            top: -36px !important;
+            transform: none !important;
+          }
+          .screener-card-icon {
+            justify-content: flex-start !important;
+            margin-bottom: 12px !important;
+            padding-top: 0 !important;
+          }
+          .screener-card-icon svg {
+            width: 30px;
+            height: 30px;
+          }
+          .screener-card-title {
+            font-size: 17px !important;
+            line-height: 1.25 !important;
+            margin-bottom: 5px !important;
+          }
+          .screener-card-desc {
+            font-size: 12.5px !important;
+            line-height: 1.55 !important;
+            margin-bottom: 12px !important;
+            max-width: 92%;
+          }
+          .screener-card-footer {
+            justify-content: flex-start !important;
+            gap: 10px !important;
           }
         }
       `}</style>

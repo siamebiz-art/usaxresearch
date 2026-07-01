@@ -345,3 +345,10 @@ Deployment note:
 
 - Portfolio holdings now use real stock logo images from the same symbol-logo source used by Dashboard, Watchlist, and Screener rows.
 - Holdings keep a ticker-letter fallback if an external logo is unavailable.
+
+## Implementation Update 2026-07-01 - Mobile Screener Cards
+
+- AI Screener cards now reflow from five desktop columns to three, two, then one column as the viewport narrows.
+- Mobile screener cards use full-width readable cards so Thai labels and descriptions no longer collapse into vertical text.
+- Card icon, spacing, and count badge sizing are tuned for small screens.
+- Build check passed with `npm run build`.
