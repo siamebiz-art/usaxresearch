@@ -437,11 +437,21 @@ function LoginModal() {
 
   const handleGoogleSignIn = async () => {
     setMsg("");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
-    });
-    if (error) setMsg(error.message);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/dashboard` },
+      });
+      if (error) {
+        console.error("Google OAuth error:", error);
+        setMsg(error.message);
+      } else {
+        console.log("Google OAuth initiated:", data);
+      }
+    } catch (e: any) {
+      console.error("Google OAuth exception:", e);
+      setMsg(e?.message ?? "เกิดข้อผิดพลาด กรุณาลองใหม่");
+    }
   };
 
   const btnLabel = loading ? (lang === "th" ? "กำลังโหลด..." : "Loading...")
