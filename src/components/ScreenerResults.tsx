@@ -137,6 +137,25 @@ function t(key: keyof typeof T, lang: string): any {
   return v[lang] ?? v["en"];
 }
 
+const LS_WATCHLIST_KEY = "usax-watchlist-v1";
+
+function saveTickerToWatchlist(ticker: string) {
+  const normalized = ticker.trim().toUpperCase();
+  if (!normalized) return;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LS_WATCHLIST_KEY) ?? "[]");
+    const existing = Array.isArray(parsed)
+      ? parsed.map((item: unknown) => String(item).trim().toUpperCase()).filter(Boolean)
+      : [];
+    const next = existing.includes(normalized) ? existing : [...existing, normalized];
+    localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([...new Set(next)]));
+    window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
+  } catch {
+    localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([normalized]));
+    window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
+  }
+}
+
 // ── Score Ring ────────────────────────────────────────────────
 function ScoreRing({ score }: { score: number }) {
   const color = score >= 90 ? "#22C55E" : score >= 75 ? "#EAB308" : "#EF4444";
@@ -204,12 +223,7 @@ function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number
             <button
               onClick={e => {
                 e.stopPropagation();
-                try {
-                  const existing: string[] = JSON.parse(localStorage.getItem("usax-watchlist-v1") ?? "[]");
-                  if (!existing.includes(s.ticker)) {
-                    localStorage.setItem("usax-watchlist-v1", JSON.stringify([...existing, s.ticker]));
-                  }
-                } catch {}
+                saveTickerToWatchlist(s.ticker);
                 window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "watchlist" } }));
               }}
               style={{ background: "none", border: "1px solid var(--accent)", color: "var(--accent)", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>

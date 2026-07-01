@@ -2,7 +2,19 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Bell, BellOff, Search, TrendingUp, TrendingDown, Star } from "lucide-react";
 
-const STOCK_DB: Record<string, any> = {
+type WatchStock = {
+  name: string;
+  price: number;
+  change: string;
+  up: boolean;
+  score: number;
+  color: string;
+  spark: string;
+};
+
+const DEFAULT_SPARK = "M0,20 L10,20 L20,20 L30,20 L40,20 L50,20 L60,20";
+
+const STOCK_DB: Record<string, WatchStock> = {
   NVDA:  { name: "NVIDIA Corp.",      price: 1089.0, change: "+3.21%", up: true,  score: 97, color: "#76B900", spark: "M0,36 L10,30 L20,22 L30,16 L40,10 L50,6 L60,4"  },
   AAPL:  { name: "Apple Inc.",        price: 195.89, change: "+1.15%", up: true,  score: 85, color: "#555",    spark: "M0,28 L10,25 L20,23 L30,20 L40,18 L50,15 L60,12" },
   MSFT:  { name: "Microsoft Corp.",   price: 416.34, change: "+0.92%", up: true,  score: 90, color: "#00A1F1", spark: "M0,26 L10,23 L20,20 L30,17 L40,13 L50,10 L60,8"  },
@@ -17,6 +29,24 @@ const STOCK_DB: Record<string, any> = {
   AMD:   { name: "Advanced Micro Dev",price: 158.00, change: "+2.10%", up: true,  score: 86, color: "#ED1C24", spark: "M0,28 L10,24 L20,20 L30,16 L40,12 L50,9 L60,7"   },
   AVGO:  { name: "Broadcom Inc.",     price: 1687.0, change: "+2.50%", up: true,  score: 91, color: "#CC0000", spark: "M0,30 L10,24 L20,18 L30,14 L40,10 L50,7 L60,4"   },
   NET:   { name: "Cloudflare Inc.",   price: 96.35,  change: "+2.14%", up: true,  score: 90, color: "#F48120", spark: "M0,30 L10,24 L20,18 L30,14 L40,10 L50,7 L60,5"   },
+  GOOG:  { name: "Alphabet Inc.",     price: 167.40, change: "+1.52%", up: true,  score: 93, color: "#4285F4", spark: "M0,28 L10,24 L20,20 L30,16 L40,12 L50,9 L60,6"   },
+  BRKB:  { name: "Berkshire Hathaway",price: 406.10, change: "+0.30%", up: true,  score: 89, color: "#7F5539", spark: "M0,22 L10,20 L20,22 L30,18 L40,20 L50,18 L60,16" },
+  PYPL:  { name: "PayPal Holdings",   price: 63.20,  change: "+2.10%", up: true,  score: 82, color: "#003087", spark: "M0,26 L10,22 L20,20 L30,17 L40,15 L50,13 L60,12"  },
+  ADBE:  { name: "Adobe Inc.",        price: 414.00, change: "+0.90%", up: true,  score: 86, color: "#FF0000", spark: "M0,30 L10,26 L20,22 L30,18 L40,14 L50,12 L60,10"  },
+  SQ:    { name: "Block Inc.",        price: 66.80,  change: "+1.50%", up: true,  score: 74, color: "#1B1B1B", spark: "M0,24 L10,21 L20,19 L30,16 L40,14 L50,12 L60,11"  },
+  SNOW:  { name: "Snowflake Inc.",    price: 162.80, change: "+1.10%", up: true,  score: 83, color: "#29B5E8", spark: "M0,28 L10,24 L20,20 L30,17 L40,13 L50,11 L60,10"  },
+  TSM:   { name: "TSMC",              price: 153.40, change: "+1.80%", up: true,  score: 90, color: "#1D4ED8", spark: "M0,28 L10,24 L20,20 L30,15 L40,11 L50,9 L60,8"    },
+  ORCL:  { name: "Oracle Corp.",      price: 122.30, change: "+0.90%", up: true,  score: 84, color: "#C74634", spark: "M0,26 L10,23 L20,21 L30,18 L40,14 L50,12 L60,11"  },
+  PANW:  { name: "Palo Alto Networks",price: 305.00, change: "+1.20%", up: true,  score: 88, color: "#00C0E8", spark: "M0,28 L10,25 L20,22 L30,18 L40,14 L50,10 L60,8"   },
+  FTNT:  { name: "Fortinet Inc.",     price: 59.00,  change: "+0.90%", up: true,  score: 82, color: "#EE3124", spark: "M0,26 L10,24 L20,22 L30,19 L40,16 L50,14 L60,12"  },
+  JNJ:   { name: "Johnson & Johnson", price: 155.00, change: "+0.50%", up: true,  score: 84, color: "#D51900", spark: "M0,24 L10,23 L20,21 L30,20 L40,18 L50,17 L60,16"  },
+  KO:    { name: "Coca-Cola Co.",     price: 63.00,  change: "+0.30%", up: true,  score: 81, color: "#F40009", spark: "M0,22 L10,21 L20,20 L30,19 L40,18 L50,17 L60,16"  },
+  PG:    { name: "Procter & Gamble",  price: 168.00, change: "+0.60%", up: true,  score: 83, color: "#003DA5", spark: "M0,26 L10,24 L20,22 L30,20 L40,18 L50,16 L60,14"  },
+  ABBV:  { name: "AbbVie Inc.",       price: 178.00, change: "+1.20%", up: true,  score: 86, color: "#071D49", spark: "M0,28 L10,25 L20,22 L30,18 L40,15 L50,12 L60,10"  },
+  ENPH:  { name: "Enphase Energy",    price: 118.00, change: "+2.10%", up: true,  score: 78, color: "#F37321", spark: "M0,30 L10,27 L20,23 L30,20 L40,17 L50,13 L60,10"  },
+  UBER:  { name: "Uber Technologies", price: 75.00,  change: "+3.10%", up: true,  score: 80, color: "#000000", spark: "M0,32 L10,28 L20,23 L30,18 L40,14 L50,9 L60,6"    },
+  V:     { name: "Visa Inc.",         price: 272.00, change: "+0.80%", up: true,  score: 88, color: "#1A1F71", spark: "M0,26 L10,24 L20,22 L30,19 L40,16 L50,13 L60,10"  },
+  MA:    { name: "Mastercard Inc.",   price: 455.00, change: "+0.90%", up: true,  score: 87, color: "#EB001B", spark: "M0,27 L10,25 L20,22 L30,19 L40,15 L50,12 L60,9"   },
 };
 
 const ALL_TICKERS = Object.keys(STOCK_DB);
@@ -75,6 +105,39 @@ const DEFAULT_ALERTS  = ["NVDA", "AAPL"];
 const LS_LIST_KEY     = "usax-watchlist-v1";
 const LS_ALERTS_KEY   = "usax-watchlist-alerts-v1";
 
+function normalizeTicker(value: unknown) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function normalizeTickerList(value: unknown) {
+  const source = Array.isArray(value) ? value : [];
+  return [...new Set(source.map(normalizeTicker).filter(Boolean))];
+}
+
+function readTickerList(key: string, fallback: string[] = []) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    const next = normalizeTickerList(parsed);
+    return next.length ? next : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getStockInfo(ticker: string): WatchStock {
+  return STOCK_DB[ticker] ?? {
+    name: ticker,
+    price: 0,
+    change: "-",
+    up: true,
+    score: 75,
+    color: "#64748B",
+    spark: DEFAULT_SPARK,
+  };
+}
+
 export default function WatchlistPage({ lang }: { lang: string }) {
   const TH = lang === "th";
   const [list,    setListRaw]    = useState<string[]>(DEFAULT_LIST);
@@ -84,38 +147,59 @@ export default function WatchlistPage({ lang }: { lang: string }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(LS_LIST_KEY);
-      if (saved) setListRaw(JSON.parse(saved));
-      const savedAlerts = localStorage.getItem(LS_ALERTS_KEY);
-      if (savedAlerts) setAlertsRaw(new Set(JSON.parse(savedAlerts)));
-    } catch {}
+    const loadSavedWatchlist = () => {
+      setListRaw(readTickerList(LS_LIST_KEY, DEFAULT_LIST));
+      setAlertsRaw(new Set(readTickerList(LS_ALERTS_KEY, DEFAULT_ALERTS)));
+    };
+    const timer = window.setTimeout(loadSavedWatchlist, 0);
+    window.addEventListener("usax-watchlist-updated", loadSavedWatchlist);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("usax-watchlist-updated", loadSavedWatchlist);
+    };
   }, []);
 
   const setList = (updater: (prev: string[]) => string[]) => {
     setListRaw(prev => {
-      const next = updater(prev);
+      const next = normalizeTickerList(updater(prev));
       try { localStorage.setItem(LS_LIST_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
   };
   const setAlerts = (updater: (prev: Set<string>) => Set<string>) => {
     setAlertsRaw(prev => {
-      const next = updater(prev);
+      const next = new Set(normalizeTickerList([...updater(prev)]));
       try { localStorage.setItem(LS_ALERTS_KEY, JSON.stringify([...next])); } catch {}
       return next;
     });
   };
 
-  const suggestions = ALL_TICKERS.filter(t => !list.includes(t) && (t.includes(query.toUpperCase()) || STOCK_DB[t]?.name.toLowerCase().includes(query.toLowerCase())));
+  const normalizedQuery = query.trim().toUpperCase();
+  const suggestions = normalizedQuery
+    ? ALL_TICKERS.filter(t => !list.includes(t) && (t.includes(normalizedQuery) || STOCK_DB[t]?.name.toLowerCase().includes(query.toLowerCase())))
+    : [];
   const stocks = Array.isArray(list)
-    ? list.map(t => ({ ticker: String(t), ...STOCK_DB[String(t)] })).filter(s => s.price != null)
+    ? normalizeTickerList(list).map(t => ({ ticker: t, ...getStockInfo(t) }))
     : [];
   const best   = stocks.length ? stocks.reduce((a, b) => ((a.score ?? 0) > (b.score ?? 0) ? a : b)) : null;
 
-  const addStock = (t: string) => { if (!list.includes(t)) setList(p => [...p, t]); setQuery(""); setFocused(false); };
-  const removeStock = (t: string) => setList(p => p.filter(x => x !== t));
-  const toggleAlert = (t: string) => setAlerts(p => { const n = new Set(p); n.has(t) ? n.delete(t) : n.add(t); return n; });
+  const addStock = (t: string) => {
+    const ticker = normalizeTicker(t);
+    if (ticker && !list.includes(ticker)) setList(p => [...p, ticker]);
+    setQuery("");
+    setFocused(false);
+  };
+  const removeStock = (t: string) => setList(p => p.filter(x => x !== normalizeTicker(t)));
+  const toggleAlert = (t: string) => setAlerts(p => {
+    const ticker = normalizeTicker(t);
+    const n = new Set(p);
+    if (n.has(ticker)) {
+      n.delete(ticker);
+    } else {
+      n.add(ticker);
+    }
+    return n;
+  });
 
   return (
     <div className="fade-up">
@@ -157,6 +241,18 @@ export default function WatchlistPage({ lang }: { lang: string }) {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {focused && normalizedQuery && suggestions.length === 0 && !list.includes(normalizedQuery) && (
+            <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 8, zIndex: 100, minWidth: 220, boxShadow: "var(--shadow-md)" }}>
+              <div onMouseDown={e => e.preventDefault()} onClick={() => addStock(normalizedQuery)}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer" }}>
+                <StockLogo ticker={normalizedQuery} size={28} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{normalizedQuery}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)" }}>{TH ? "เพิ่ม ticker นี้" : "Add this ticker"}</div>
+                </div>
+              </div>
             </div>
           )}
         </div>

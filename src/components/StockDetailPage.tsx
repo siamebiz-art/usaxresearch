@@ -39,6 +39,25 @@ function getScoreColor(s: number) {
   return s >= 90 ? "#22C55E" : s >= 80 ? "#3B82F6" : s >= 70 ? "#EAB308" : "#EF4444";
 }
 
+const LS_WATCHLIST_KEY = "usax-watchlist-v1";
+
+function saveTickerToWatchlist(ticker: string) {
+  const normalized = ticker.trim().toUpperCase();
+  if (!normalized) return;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LS_WATCHLIST_KEY) ?? "[]");
+    const existing = Array.isArray(parsed)
+      ? parsed.map((item: unknown) => String(item).trim().toUpperCase()).filter(Boolean)
+      : [];
+    const next = existing.includes(normalized) ? existing : [...existing, normalized];
+    localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([...new Set(next)]));
+    window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
+  } catch {
+    localStorage.setItem(LS_WATCHLIST_KEY, JSON.stringify([normalized]));
+    window.dispatchEvent(new CustomEvent("usax-watchlist-updated"));
+  }
+}
+
 function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   const color = getScoreColor(score);
   const r = (size - 8) / 2;
@@ -87,6 +106,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
   const TH = lang === "th";
   const d  = getDefault(ticker);
   const [tab, setTab] = useState<Tab>("overview");
+  const [saved, setSaved] = useState(false);
 
   const TAB_LABELS: Record<Tab, string> = {
     overview:   TH ? "ภาพรวม"   : "Overview",
@@ -162,7 +182,13 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
 
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
-          <button style={{ display: "flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg, var(--accent), var(--cyan))", border: "none", borderRadius: 11, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+          <button
+            onClick={() => {
+              saveTickerToWatchlist(ticker);
+              setSaved(true);
+              window.setTimeout(() => setSaved(false), 1400);
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 7, background: saved ? "var(--green)" : "linear-gradient(135deg, var(--accent), var(--cyan))", border: "none", borderRadius: 11, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             <Star size={14} /> {TH ? "เพิ่มใน Watchlist" : "Add to Watchlist"}
           </button>
           <button style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 18px", color: "var(--text)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
