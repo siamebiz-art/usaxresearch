@@ -231,6 +231,7 @@ const SEARCH_ITEMS = [
   { type: "screener", id: "breakout",  icon: "⚡", th: "หุ้น Breakout",               en: "Breakout Stocks",       screenerId: "breakout" },
   { type: "screener", id: "quality",   icon: "💎", th: "หุ้น Quality (คุณภาพสูง)",   en: "Quality Stocks",        screenerId: "quality" },
   { type: "screener", id: "dividend",  icon: "💰", th: "หุ้นปันผล (Dividend)",        en: "Dividend Stocks",       screenerId: "dividend" },
+  { type: "screener", id: "value",     icon: "💵", th: "หุ้น Value ราคาน่าสนใจ",      en: "Value Stocks",          screenerId: "value" },
   // Pages
   { type: "page", id: "dashboard",  icon: "🏠", th: "หน้าหลัก Dashboard",    en: "Dashboard",          page: "dashboard" },
   { type: "page", id: "screener",   icon: "🔍", th: "AI Screener",            en: "AI Screener",        page: "screener" },

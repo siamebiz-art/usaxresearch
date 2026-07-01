@@ -250,6 +250,7 @@ const QUICK_ACTIONS = [
   { id: "breakout", icon: "📈", label_th: "Breakout",         label_en: "Breakout",         color: "#F97316", bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)" },
   { id: "quality",  icon: "💎", label_th: "Quality Stocks",   label_en: "Quality Stocks",   color: "#8B5CF6", bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)" },
   { id: "dividend", icon: "💰", label_th: "Dividend Stocks",  label_en: "Dividend Stocks",  color: "#EAB308", bg: "rgba(234,179,8,0.12)",  border: "rgba(234,179,8,0.3)"  },
+  { id: "value",    icon: "💵", label_th: "Value Stocks",     label_en: "Value Stocks",     color: "#10B981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)" },
 ];
 
 function QuickActions({ lang }: { lang: string }) {

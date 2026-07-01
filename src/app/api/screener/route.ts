@@ -47,6 +47,7 @@ const PRESETS: Record<string, Record<string, string>> = {
     peRatioLowerThan: "20",
     marketCapMoreThan: "5000000000",
     revenueGrowthMoreThan: "5",
+    volumeMoreThan: "500000",
   },
   megatrend: {
     marketCapMoreThan: "10000000000",
