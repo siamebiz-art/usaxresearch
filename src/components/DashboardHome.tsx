@@ -206,7 +206,7 @@ function HeroSection({ lang }: { lang: string }) {
     <section style={{ marginBottom: 28 }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 900, color: "var(--text)", margin: "0 0 6px", lineHeight: 1.25 }}>
-          {TH ? "👋 วันนี้ AI พร้อมคัดหุ้นให้คุณแล้ว" : "👋 Your AI is ready to pick stocks today"}
+          {TH ? "👋 วันนี้ AI พร้อมคัดกรองหุ้นให้คุณแล้ว" : "👋 Your AI is ready to screen stocks today"}
         </h1>
         <p style={{ fontSize: 13.5, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
           {TH
