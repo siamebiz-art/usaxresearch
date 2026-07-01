@@ -62,6 +62,7 @@ const NAV_LABELS: Record<string, Record<string, string>> = {
   compare:   { th: "เปรียบเทียบหุ้น",   en: "Compare Stocks" },
   watchlist: { th: "AI Watchlist",      en: "AI Watchlist" },
   portfolio: { th: "Portfolio Analysis",en: "Portfolio Analysis" },
+  "stock-detail": { th: "รายละเอียดหุ้น", en: "Stock Detail" },
   alerts:    { th: "AI Alerts",         en: "AI Alerts" },
   market:    { th: "Market Overview",   en: "Market Overview" },
   news:      { th: "ข่าวสารตลาด",       en: "Market News" },
@@ -674,6 +675,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
   const { lang, setLang } = useLang();
   const [active,           setActive]          = useState("dashboard");
   const [selectedScreener, setSelectedScreener] = useState<string | null>(null);
+  const [selectedStock,    setSelectedStock]    = useState<string | null>(null);
   const [sidebarOpen,      setSidebarOpen]      = useState(false);
   const [theme,            setTheme]            = useState("light");
   const [isMobile,         setIsMobile]         = useState(false);
@@ -692,9 +694,10 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     window.addEventListener("resize", check);
 
     const handleNav = (e: Event) => {
-      const { page, screenerId } = (e as CustomEvent).detail;
+      const { page, screenerId, ticker } = (e as CustomEvent).detail;
       setActive(page);
       setSelectedScreener(screenerId ?? null);
+      setSelectedStock(ticker ? String(ticker).toUpperCase() : null);
     };
     window.addEventListener("usax-navigate", handleNav);
 
@@ -737,9 +740,12 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-  }, [active]);
+  }, [active, selectedStock]);
 
   const pageForActive = () => {
+    if (active === "stock-detail" && selectedStock) {
+      return <StockDetailPage ticker={selectedStock} onBack={() => { setSelectedStock(null); setActive("dashboard"); }} lang={lang} />;
+    }
     if (active === "dashboard" && children) return children;
     if (active === "screener") return <ScreenerPage selectedId={selectedScreener} setSelectedId={setSelectedScreener} lang={lang} />;
     if (active === "compare")  return <ComparePage lang={lang} />;
@@ -790,7 +796,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
       }}>
         <SidebarContent
           active={active}
-          setActive={(id) => { setActive(id); setSelectedScreener(null); }}
+          setActive={(id) => { setActive(id); setSelectedScreener(null); setSelectedStock(null); }}
           closeSidebar={() => setSidebarOpen(false)}
           profile={profile} user={user} onSignOut={handleSignOut}
           onUpgrade={() => setShowPayment(true)} lang={lang}

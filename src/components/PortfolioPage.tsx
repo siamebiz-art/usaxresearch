@@ -323,7 +323,7 @@ export default function PortfolioPage({ lang }: { lang: string }) {
 
       {showForm && (
         <div style={{ background: "var(--bg-card)", border: "1.5px solid var(--accent)", borderRadius: 8, padding: "18px 20px", marginBottom: 16 }} className="fade-up">
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1.2fr) repeat(3, minmax(120px, 1fr)) auto", gap: 12, alignItems: "end" }}>
+          <div className="portfolio-form-grid" style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1.2fr) repeat(3, minmax(120px, 1fr)) auto", gap: 12, alignItems: "end" }}>
             <div>
               <label style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: 6 }}>{TH ? "หุ้น" : "Stock"}</label>
               <select
@@ -360,7 +360,7 @@ export default function PortfolioPage({ lang }: { lang: string }) {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div className="portfolio-metrics-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 16 }}>
         {[
           { label_th: "มูลค่าพอร์ต", label_en: "Portfolio Value", value: `$${fmt(totalValue)}`, color: "var(--text)" },
           { label_th: "ต้นทุนรวม", label_en: "Total Cost", value: `$${fmt(totalCost)}`, color: "var(--muted)" },
@@ -383,8 +383,8 @@ export default function PortfolioPage({ lang }: { lang: string }) {
       </div>
 
       {tab === "holdings" && (
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 70px 90px 90px 110px 115px 76px", gap: 8, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
+        <div className="responsive-table-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+          <div className="portfolio-holdings-row" style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 70px 90px 90px 110px 115px 76px", gap: 8, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
             {[
               TH ? "หุ้น" : "Stock",
               TH ? "จำนวน" : "Shares",
@@ -410,7 +410,7 @@ export default function PortfolioPage({ lang }: { lang: string }) {
               const positionUp = pnl >= 0;
 
               return (
-                <div key={position.id} style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 70px 90px 90px 110px 115px 76px", gap: 8, alignItems: "center", padding: "13px 16px", borderBottom: index < positions.length - 1 ? "1px solid var(--border)" : "none", transition: "background .12s" }} onMouseEnter={(event) => (event.currentTarget.style.background = "var(--bg-raised)")} onMouseLeave={(event) => (event.currentTarget.style.background = "transparent")}>
+                <div key={position.id} className="portfolio-holdings-row" style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 70px 90px 90px 110px 115px 76px", gap: 8, alignItems: "center", padding: "13px 16px", borderBottom: index < positions.length - 1 ? "1px solid var(--border)" : "none", transition: "background .12s" }} onMouseEnter={(event) => (event.currentTarget.style.background = "var(--bg-raised)")} onMouseLeave={(event) => (event.currentTarget.style.background = "transparent")}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 8, background: position.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                       {position.ticker.slice(0, 4)}

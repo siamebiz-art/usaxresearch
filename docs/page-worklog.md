@@ -316,3 +316,19 @@ Deployment note:
 - Added `/api/quotes` as a bulk quote proxy backed by Yahoo Finance with no paid API key required.
 - Dashboard Top Picks, Watchlist, Market Overview, and the market mini strip now refresh displayed price and daily change from live quote data after the page loads.
 - Existing static dashboard values remain as fallback if the quote provider is unavailable.
+
+## Implementation Update 2026-07-01 - Dashboard Stock Detail Navigation
+
+- Dashboard AI Top Picks cards now open the selected ticker in the existing Stock Detail page.
+- The Stock Detail back action returns users to the Dashboard after opening from Top Picks.
+- App navigation now carries a selected ticker through the internal `usax-navigate` event.
+
+## Implementation Update 2026-07-01 - Responsive Layout Pass
+
+- Added shared responsive CSS for mobile page headers, form grids, metric grids, and horizontally scrollable data tables.
+- Dashboard Top Picks, Screener shortcuts, Market Overview, and embedded Watchlist now reflow for tablet and mobile widths.
+- Watchlist and Portfolio tables now preserve readable columns on mobile with intentional horizontal scrolling.
+- Portfolio form and metric cards now stack cleanly on narrow screens.
+- Stock Detail metric and company-info grids now collapse from four columns to two columns, then one column on small phones.
+- Screener result tables now keep readable column widths on mobile.
+- Build check passed with `npm run build`.

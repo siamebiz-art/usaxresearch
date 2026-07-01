@@ -385,7 +385,7 @@ function ScreenerRow({ lang }: { lang: string }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+      <div className="dashboard-screener-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
         {visible.map(sc => (
           <div key={sc.id}
             onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "screener", screenerId: sc.id } }))}
@@ -418,7 +418,7 @@ function TopPicksCard({ lang }: { lang: string }) {
   const liveQuotes = useDashboardQuotes();
 
   return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow)" }}>
+    <div className="responsive-table-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow)" }}>
       {/* Header */}
       <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -440,7 +440,7 @@ function TopPicksCard({ lang }: { lang: string }) {
       </div>
 
       {/* 5-card horizontal grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)" }}>
+      <div className="top-picks-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)" }}>
         {TOP_PICKS.map((stock, i) => {
           const tags = lang === "th" ? stock.tags_th : stock.tags_en;
           const live = liveQuotes[stock.ticker];
@@ -448,7 +448,12 @@ function TopPicksCard({ lang }: { lang: string }) {
           const change = live ? formatLiveChange(live.changePct) : stock.change;
           const up = live ? live.changePct >= 0 : stock.up;
           return (
-            <div key={stock.ticker} style={{ padding: "16px 12px", borderRight: i < 4 ? "1px solid var(--border)" : "none", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", cursor: "pointer" }}>
+            <div
+              className="top-pick-card"
+              key={stock.ticker}
+              onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "stock-detail", ticker: stock.ticker } }))}
+              style={{ padding: "16px 12px", borderRight: i < 4 ? "1px solid var(--border)" : "none", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", cursor: "pointer" }}
+            >
               {/* Rank + Logo row */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: 10 }}>
                 <div style={{ width: 20, height: 20, borderRadius: 5, background: i === 0 ? "linear-gradient(135deg,#F59E0B,#EF4444)" : "var(--bg-raised)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 900, color: i === 0 ? "#fff" : "var(--muted)", flexShrink: 0 }}>
@@ -514,7 +519,7 @@ function MarketCard({ lang }: { lang: string }) {
           ))}
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
+      <div className="market-overview-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
         {MARKET.map((m, i) => {
           const live = liveQuotes[m.symbol];
           const value = live ? formatLivePrice(live.price) : m.value;
@@ -670,7 +675,7 @@ function WatchlistCard({ lang }: { lang: string }) {
       </div>
 
       {/* Column headers */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.7fr 0.8fr 0.5fr", gap: "0 8px", padding: "7px 18px 5px", fontSize: 9.5, fontWeight: 700, color: "var(--faint)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div className="dashboard-watchlist-row" style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.7fr 0.8fr 0.5fr", gap: "0 8px", padding: "7px 18px 5px", fontSize: 9.5, fontWeight: 700, color: "var(--faint)", textTransform: "uppercase", letterSpacing: 0.5 }}>
         {cols.map(c => <span key={c}>{c}</span>)}
       </div>
 
@@ -680,7 +685,7 @@ function WatchlistCard({ lang }: { lang: string }) {
         const change = live ? formatLiveChange(live.changePct) : w.change;
         const up = live ? live.changePct >= 0 : w.up;
         return (
-        <div key={w.ticker} style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.7fr 0.8fr 0.5fr", gap: "0 8px", padding: "9px 18px", alignItems: "center", borderTop: "1px solid var(--border)", cursor: "pointer" }}>
+        <div key={w.ticker} className="dashboard-watchlist-row" style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.7fr 0.8fr 0.5fr", gap: "0 8px", padding: "9px 18px", alignItems: "center", borderTop: "1px solid var(--border)", cursor: "pointer" }}>
           {/* Stock */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => { const s = new Set(starred); s.has(w.ticker) ? s.delete(w.ticker) : s.add(w.ticker); setStarred(s); }}
@@ -887,6 +892,17 @@ export default function DashboardHome() {
       <style>{`
         @media (max-width: 1100px) { .dash-main { grid-template-columns: 1fr !important; } }
         @media (max-width: 900px)  { .dash-main { grid-template-columns: 1fr !important; } }
+        @media (max-width: 760px)  {
+          .top-picks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .top-pick-card { border-right: none !important; border-bottom: 1px solid var(--border); }
+          .dashboard-screener-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .market-overview-grid { grid-template-columns: 1fr !important; }
+          .dashboard-watchlist-row { min-width: 680px; }
+        }
+        @media (max-width: 520px)  {
+          .top-picks-grid { grid-template-columns: 1fr !important; }
+          .dashboard-screener-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
     </div>
   );

@@ -81,3 +81,78 @@ a { text-decoration: none; color: inherit; }
 }
 
 .fade-up { animation: fadeUp .35s ease both; }
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img, svg, canvas, video {
+  max-width: 100%;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+.responsive-table-card {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .page-header-wrap {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .watchlist-add-box,
+  .watchlist-add-box > div {
+    width: 100% !important;
+  }
+
+  .watchlist-add-box input {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .portfolio-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .portfolio-form-grid button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .portfolio-metrics-grid,
+  .stock-detail-metrics-grid,
+  .stock-detail-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .responsive-table-card {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .watchlist-table-row {
+    min-width: 680px;
+  }
+
+  .portfolio-holdings-row {
+    min-width: 760px;
+  }
+
+  .screener-result-row {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 520px) {
+  .portfolio-metrics-grid,
+  .stock-detail-metrics-grid,
+  .stock-detail-info-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

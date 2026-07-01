@@ -243,7 +243,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
       {tab === "overview" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* Key metrics grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div className="stock-detail-metrics-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {METRICS.slice(0, 8).map(m => (
               <div key={m.label_en} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 13, padding: "14px 16px" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "var(--faint)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
@@ -281,7 +281,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
             <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", marginBottom: 12 }}>
               {TH ? "ข้อมูลบริษัท" : "Company Info"}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
+            <div className="stock-detail-info-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
               {METRICS.slice(8).map(m => (
                 <div key={m.label_en}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--faint)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>

@@ -220,7 +220,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
   return (
     <div className="fade-up">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
+      <div className="page-header-wrap" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--text)", margin: 0 }}>
             {TH ? "AI Watchlist" : "AI Watchlist"}
@@ -230,7 +230,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
           </p>
         </div>
         {/* Add stock input */}
-        <div style={{ position: "relative" }}>
+        <div className="watchlist-add-box" style={{ position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-card)", border: "1.5px solid var(--accent)", borderRadius: 11, padding: "8px 14px" }}>
             <Search size={14} color="var(--accent)" />
             <input
@@ -275,9 +275,9 @@ export default function WatchlistPage({ lang }: { lang: string }) {
       </div>
 
       {/* Table */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
+      <div className="responsive-table-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
         {/* Table header */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 80px 44px 70px 44px 44px", gap: 8, padding: "10px 18px", borderBottom: "1px solid var(--border)" }}>
+        <div className="watchlist-table-row" style={{ display: "grid", gridTemplateColumns: "1fr 110px 80px 44px 70px 44px 44px", gap: 8, padding: "10px 18px", borderBottom: "1px solid var(--border)" }}>
           {[TH ? "หุ้น" : "Stock", TH ? "ราคา" : "Price", TH ? "เปลี่ยน" : "Change", TH ? "คะแนน" : "Score", "7D Chart", TH ? "แจ้ง" : "Alert", ""].map((h, i) => (
             <div key={i} style={{ fontSize: 10, fontWeight: 700, color: "var(--faint)", textTransform: "uppercase", letterSpacing: 0.5, textAlign: i >= 1 ? "center" : "left" }}>
               {h}
@@ -296,6 +296,7 @@ export default function WatchlistPage({ lang }: { lang: string }) {
         ) : (
           stocks.map((s, idx) => (
             <div key={s.ticker}
+              className="watchlist-table-row"
               style={{ display: "grid", gridTemplateColumns: "1fr 110px 80px 44px 70px 44px 44px", gap: 8, alignItems: "center", padding: "13px 18px", borderBottom: idx < stocks.length - 1 ? "1px solid var(--border)" : "none", transition: "background .12s" }}
               onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-raised)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>

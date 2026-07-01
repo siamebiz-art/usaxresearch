@@ -180,9 +180,10 @@ function StockRow({ s, rank, color, lang, onViewDetail }: { s: any; rank: number
   const [expanded, setExpanded] = useState(false);
   const [saved, setSaved] = useState(false);
   return (
-    <div>
-      <div
-        onClick={() => setExpanded(!expanded)}
+      <div>
+        <div
+          className="screener-result-row"
+          onClick={() => setExpanded(!expanded)}
         style={{ display: "grid", gridTemplateColumns: "32px 36px 1fr auto auto auto auto auto", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid var(--border)", transition: "background .15s" }}
         onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-raised)")}
         onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
@@ -350,8 +351,8 @@ export default function ScreenerResults({ screener, onBack, onViewDetail, lang =
           </div>
 
           {/* Table */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }} className="fade-up">
-            <div style={{ display: "grid", gridTemplateColumns: "32px 1fr auto auto auto auto auto", gap: 12, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }} className="fade-up responsive-table-card">
+            <div className="screener-result-row" style={{ display: "grid", gridTemplateColumns: "32px 1fr auto auto auto auto auto", gap: 12, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
               {COL_HEADS.map((h, i) => (
                 <div key={h} style={{ fontSize: 10, fontWeight: 700, color: "var(--faint)", textTransform: "uppercase", letterSpacing: 0.5, textAlign: i === 0 ? "center" : i <= 1 ? "left" : "right" }}>
                   {h}
