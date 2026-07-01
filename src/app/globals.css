@@ -99,7 +99,118 @@ button, input, select, textarea {
   max-width: 100%;
 }
 
+.disclaimer-banner {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(255, 255, 255, 0.72));
+  border-bottom: 1px solid rgba(245, 158, 11, 0.22);
+  color: var(--muted);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  padding: 10px 20px;
+}
+
+.disclaimer-icon {
+  align-items: center;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 10px;
+  color: var(--orange);
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.disclaimer-copy {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.disclaimer-copy strong {
+  color: var(--orange);
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.disclaimer-copy span {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.disclaimer-link {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+
+.disclaimer-close {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  color: var(--faint);
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
 @media (max-width: 768px) {
+  .disclaimer-banner {
+    align-items: start;
+    gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    padding: 10px 14px;
+  }
+
+  .disclaimer-icon {
+    border-radius: 9px;
+    height: 30px;
+    width: 30px;
+  }
+
+  .disclaimer-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .disclaimer-copy strong {
+    font-size: 12px;
+  }
+
+  .disclaimer-copy span {
+    display: -webkit-box;
+    font-size: 12px;
+    line-height: 1.45;
+    max-height: 3.5em;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .disclaimer-link {
+    align-self: center;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .disclaimer-close {
+    height: 30px;
+    width: 30px;
+  }
+
   .page-header-wrap {
     align-items: stretch !important;
     flex-direction: column !important;

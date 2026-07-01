@@ -1,17 +1,34 @@
 "use client";
+
 import { useState } from "react";
+import { AlertTriangle, X } from "lucide-react";
 import { useLang } from "@/lib/LangContext";
 
 export function DisclaimerBanner() {
   const [dismissed, setDismissed] = useState(false);
   const { t } = useLang();
+
   if (dismissed) return null;
+
   return (
-    <div style={{ background: "rgba(245,158,11,0.08)", borderBottom: "1px solid rgba(245,158,11,0.2)", padding: "8px 20px", display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "var(--muted)", flexWrap: "wrap" }}>
-      <span style={{ color: "var(--yellow)", fontWeight: 700, flexShrink: 0 }}>{t.disclaimer_warning}</span>
-      <span style={{ flex: 1 }}>{t.disclaimer_text}</span>
-      <a href="/disclaimer" style={{ color: "var(--accent)", fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}>{t.disclaimer_read}</a>
-      <button onClick={() => setDismissed(true)} style={{ background: "none", border: "none", color: "var(--faint)", cursor: "pointer", fontSize: 16, flexShrink: 0, padding: "0 4px" }}>✕</button>
+    <div className="disclaimer-banner">
+      <div className="disclaimer-icon" aria-hidden="true">
+        <AlertTriangle size={16} />
+      </div>
+      <div className="disclaimer-copy">
+        <strong>{t.disclaimer_warning.replace("⚠️", "").trim()}</strong>
+        <span>{t.disclaimer_text}</span>
+      </div>
+      <a className="disclaimer-link" href="/disclaimer">
+        {t.disclaimer_read}
+      </a>
+      <button
+        className="disclaimer-close"
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss warning"
+      >
+        <X size={18} />
+      </button>
     </div>
   );
 }
