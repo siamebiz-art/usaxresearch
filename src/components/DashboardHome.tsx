@@ -576,10 +576,12 @@ function WatchlistCard({ lang }: { lang: string }) {
           </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, padding: "4px 9px", fontSize: 11, fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
+          <button onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "watchlist" } }))}
+            style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 7, padding: "4px 9px", fontSize: 11, fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
             <Plus size={11} /> {lang === "th" ? "เพิ่มหุ้น" : "Add"}
           </button>
-          <button style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "watchlist" } }))}
+            style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
             {lang === "th" ? "ดูทั้งหมด" : "View All"}
           </button>
         </div>
@@ -632,7 +634,8 @@ function EarningsCard({ lang }: { lang: string }) {
           <Zap size={14} color="var(--orange)" />
           <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>Earnings Calendar</span>
         </div>
-        <button style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+        <button onClick={() => window.dispatchEvent(new CustomEvent("usax-navigate", { detail: { page: "earnings" } }))}
+          style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
           {lang === "th" ? "ดูทั้งหมด" : "View All"}
         </button>
       </div>
