@@ -322,14 +322,50 @@ export default function ScreenerResults({ screener, onBack, onViewDetail, lang =
 }) {
   const [loading,  setLoading]  = useState(true);
   const [results,  setResults]  = useState<any[]>([]);
+  const [source, setSource] = useState<"live" | "fallback">("live");
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    const timer = setTimeout(() => {
-      setResults(getResults(screener.id));
-      setLoading(false);
-    }, 3800);
-    return () => clearTimeout(timer);
+    setSource("live");
+    setUpdatedAt(null);
+
+    async function loadResults() {
+      const startedAt = Date.now();
+      try {
+        const response = await fetch(`/api/screener?type=${encodeURIComponent(screener.id)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Screener API error");
+        const data = await response.json();
+        const liveResults = Array.isArray(data.results) ? data.results : [];
+        if (!liveResults.length) throw new Error("Empty screener results");
+
+        const wait = Math.max(0, 1300 - (Date.now() - startedAt));
+        window.setTimeout(() => {
+          if (cancelled) return;
+          setResults(liveResults);
+          setSource("live");
+          setUpdatedAt(data.updatedAt ?? new Date().toISOString());
+          setLoading(false);
+        }, wait);
+      } catch {
+        const wait = Math.max(0, 1300 - (Date.now() - startedAt));
+        window.setTimeout(() => {
+          if (cancelled) return;
+          setResults(getResults(screener.id));
+          setSource("fallback");
+          setUpdatedAt(null);
+          setLoading(false);
+        }, wait);
+      }
+    }
+
+    void loadResults();
+    return () => {
+      cancelled = true;
+    };
   }, [screener.id]);
 
   const label      = lang === "th" ? screener.label    : screener.label_en;
@@ -358,6 +394,13 @@ export default function ScreenerResults({ screener, onBack, onViewDetail, lang =
         {!loading && (
           <div style={{ marginLeft: "auto", background: screener.bg, border: `1px solid ${screener.color}33`, borderRadius: 10, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: screener.color }}>
             {t("found", lang)(results.length)}
+          </div>
+        )}
+        {!loading && (
+          <div style={{ background: source === "live" ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.1)", border: `1px solid ${source === "live" ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.22)"}`, borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 800, color: source === "live" ? "var(--green)" : "var(--orange)" }}>
+            {source === "live"
+              ? `${lang === "th" ? "Yahoo Finance" : "Yahoo Finance"} ${updatedAt ? new Date(updatedAt).toLocaleTimeString(lang === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" }) : ""}`
+              : lang === "th" ? "ข้อมูลตัวอย่าง" : "Sample fallback"}
           </div>
         )}
       </div>

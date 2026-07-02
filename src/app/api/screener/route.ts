@@ -3,121 +3,164 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const FMP_BASE = "https://financialmodelingprep.com/api/v3";
-const FMP_KEY  = process.env.FMP_API_KEY!;
+const YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v7/finance/quote";
 
-// Screener preset → FMP query params
-const PRESETS: Record<string, Record<string, string>> = {
-  dip: {
-    marketCapMoreThan: "5000000000",
-    betaMoreThan: "0.5",
-    volumeMoreThan: "500000",
-  },
-  growth: {
-    revenueGrowthMoreThan: "25",
-    marketCapMoreThan: "10000000000",
-  },
-  quality: {
-    returnOnEquityMoreThan: "15",
-    debtToEquityLowerThan: "1",
-    marketCapMoreThan: "10000000000",
-  },
-  breakout: {
-    volumeMoreThan: "2000000",
-    priceMoreThan: "10",
-  },
-  ai_tech: {
-    sector: "Technology",
-    marketCapMoreThan: "10000000000",
-    revenueGrowthMoreThan: "10",
-  },
-  cyber: {
-    sector: "Technology",
-    industryLike: "Security",
-  },
-  dividend: {
-    dividendMoreThan: "2",
-    marketCapMoreThan: "5000000000",
-  },
-  earnings: {
-    marketCapMoreThan: "5000000000",
-    country: "US",
-  },
-  value: {
-    peRatioLowerThan: "20",
-    marketCapMoreThan: "5000000000",
-    revenueGrowthMoreThan: "5",
-    volumeMoreThan: "500000",
-  },
-  megatrend: {
-    marketCapMoreThan: "10000000000",
-    country: "US",
-  },
+const UNIVERSES: Record<string, string[]> = {
+  dip: ["GOOG", "PYPL", "ADBE", "TSLA", "SQ", "BRK-B", "DIS", "NKE", "INTC", "SBUX", "CRM", "SHOP"],
+  growth: ["NVDA", "META", "CRWD", "SNOW", "PLTR", "UBER", "DDOG", "NET", "MDB", "SHOP", "NOW", "PANW"],
+  quality: ["MSFT", "AAPL", "V", "MA", "COST", "AVGO", "GOOG", "META", "ADBE", "ORCL", "ACN", "INTU"],
+  breakout: ["NVDA", "META", "UBER", "AVGO", "CRWD", "AMD", "PANW", "NOW", "NFLX", "AMZN", "ANET", "ARM"],
+  ai_tech: ["NVDA", "MSFT", "AVGO", "TSM", "AMD", "ORCL", "ARM", "SMCI", "MU", "PLTR", "GOOG", "META"],
+  cyber: ["CRWD", "ZS", "PANW", "FTNT", "NET", "S", "OKTA", "CHKP", "GEN", "TENB", "QLYS", "VRNS"],
+  dividend: ["JNJ", "KO", "PG", "ABBV", "XOM", "CVX", "PEP", "MCD", "WMT", "T", "VZ", "HD"],
+  earnings: ["NVDA", "META", "AMZN", "MSFT", "GOOG", "AVGO", "NFLX", "CRM", "ORCL", "COST", "ADBE", "AMD"],
+  value: ["GOOG", "BRK-B", "PYPL", "V", "JPM", "BAC", "DIS", "CVX", "XOM", "INTC", "PFE", "CMCSA"],
+  megatrend: ["NVDA", "TSLA", "ENPH", "PLTR", "MSFT", "GOOG", "AMZN", "TSM", "NEE", "FSLR", "CRWD", "PANW"],
 };
+
+type YahooQuote = {
+  symbol?: string;
+  shortName?: string;
+  longName?: string;
+  regularMarketPrice?: number;
+  regularMarketChangePercent?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  marketCap?: number;
+  regularMarketVolume?: number;
+  averageDailyVolume3Month?: number;
+  fiftyDayAverage?: number;
+  twoHundredDayAverage?: number;
+  dividendYield?: number;
+};
+
+function formatCap(value?: number) {
+  if (!Number.isFinite(value) || !value) return "—";
+  if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(0)}B`;
+  return `${(value / 1e6).toFixed(0)}M`;
+}
+
+function formatPct(value?: number) {
+  if (!Number.isFinite(value)) return "—";
+  return `${value! >= 0 ? "+" : ""}${value!.toFixed(2)}%`;
+}
+
+function scoreQuote(type: string, quote: YahooQuote) {
+  const price = Number(quote.regularMarketPrice ?? 0);
+  const changePct = Number(quote.regularMarketChangePercent ?? 0);
+  const pe = Number(quote.trailingPE ?? quote.forwardPE ?? 0);
+  const marketCap = Number(quote.marketCap ?? 0);
+  const volume = Number(quote.regularMarketVolume ?? 0);
+  const avgVolume = Number(quote.averageDailyVolume3Month ?? 0);
+  const above50 = price > 0 && Number(quote.fiftyDayAverage ?? 0) > 0 && price > Number(quote.fiftyDayAverage);
+  const above200 = price > 0 && Number(quote.twoHundredDayAverage ?? 0) > 0 && price > Number(quote.twoHundredDayAverage);
+  const volumeRatio = avgVolume > 0 ? volume / avgVolume : 0;
+  const dividendYield = Number(quote.dividendYield ?? 0);
+
+  let score = 55;
+  if (marketCap > 10e9) score += 5;
+  if (marketCap > 100e9) score += 5;
+  if (changePct > 0) score += Math.min(10, changePct * 2);
+  if (above50) score += 8;
+  if (above200) score += 8;
+  if (volumeRatio > 1) score += 5;
+  if (pe > 0 && pe < 35) score += 7;
+
+  if (type === "value" && pe > 0 && pe < 25) score += 10;
+  if (type === "dividend" && dividendYield > 0.02) score += 14;
+  if (type === "breakout" && changePct > 1 && above50) score += 10;
+  if (type === "growth" && changePct > 0.5 && above50) score += 8;
+  if (type === "dip" && price > 0 && quote.fiftyDayAverage && price < quote.fiftyDayAverage) score += 8;
+
+  return Math.max(1, Math.min(99, Math.round(score)));
+}
+
+function reasonsFor(type: string, quote: YahooQuote) {
+  const price = Number(quote.regularMarketPrice ?? 0);
+  const pe = Number(quote.trailingPE ?? quote.forwardPE ?? 0);
+  const changePct = Number(quote.regularMarketChangePercent ?? 0);
+  const volume = Number(quote.regularMarketVolume ?? 0);
+  const avgVolume = Number(quote.averageDailyVolume3Month ?? 0);
+  const volumeRatio = avgVolume > 0 ? volume / avgVolume : 0;
+  const fiftyDay = Number(quote.fiftyDayAverage ?? 0);
+  const twoHundredDay = Number(quote.twoHundredDayAverage ?? 0);
+  const dividendYield = Number(quote.dividendYield ?? 0);
+
+  const reasons = [
+    changePct > 0 ? `1D ${formatPct(changePct)}` : null,
+    price > 0 && fiftyDay > 0 && price > fiftyDay ? "Above 50D" : null,
+    price > 0 && twoHundredDay > 0 && price > twoHundredDay ? "Above 200D" : null,
+    volumeRatio > 1 ? `Vol ${volumeRatio.toFixed(1)}x` : null,
+    pe > 0 && pe < 25 ? `P/E ${Math.round(pe)}` : null,
+    type === "dividend" && dividendYield > 0 ? `Yield ${(dividendYield * 100).toFixed(1)}%` : null,
+  ].filter(Boolean) as string[];
+
+  return reasons.slice(0, 3);
+}
 
 export async function GET(req: NextRequest) {
   const type = req.nextUrl.searchParams.get("type") ?? "growth";
-  const preset = PRESETS[type] ?? PRESETS.growth;
-
-  // 1. Fetch screener results from FMP
-  const params = new URLSearchParams({ ...preset, exchange: "NASDAQ,NYSE", limit: "20", apikey: FMP_KEY });
-  const fmpRes = await fetch(`${FMP_BASE}/stock-screener?${params}`);
-  if (!fmpRes.ok) return NextResponse.json({ error: "FMP error" }, { status: 502 });
-  const stocks: any[] = await fmpRes.json();
-  if (!Array.isArray(stocks) || stocks.length === 0) return NextResponse.json({ results: [] });
-
-  // 2. Pick top 10 and fetch key stats
-  const top10 = stocks.slice(0, 10);
-  const tickers = top10.map((s: any) => s.symbol).join(",");
-
-  const [quoteRes, profileRes] = await Promise.all([
-    fetch(`${FMP_BASE}/quote/${tickers}?apikey=${FMP_KEY}`),
-    fetch(`${FMP_BASE}/profile/${tickers}?apikey=${FMP_KEY}`),
-  ]);
-  const quotes:   any[] = quoteRes.ok   ? await quoteRes.json()   : [];
-  const profiles: any[] = profileRes.ok ? await profileRes.json() : [];
-
-  const quoteMap:   Record<string, any> = Object.fromEntries(quotes.map(q => [q.symbol, q]));
-  const profileMap: Record<string, any> = Object.fromEntries(profiles.map(p => [p.symbol, p]));
-
-  // 3. Compute AI Score (statistical — no buy/sell recommendation)
-  function aiScore(s: any, q: any, p: any): number {
-    let score = 50;
-    if (q?.pe && q.pe > 0 && q.pe < 35) score += 10;
-    if (s?.revenueGrowth > 20) score += 15;
-    if (s?.revenueGrowth > 50) score += 10;
-    if (p?.returnOnEquity > 0.15) score += 10;
-    if (p?.debtToEquity < 1) score += 5;
-    if (q?.priceAvg50 && q.price > q.priceAvg50) score += 5;
-    if (p?.beta && p.beta < 1.5) score += 5;
-    return Math.min(score, 99);
-  }
-
-  const results = top10.map((s: any) => {
-    const q = quoteMap[s.symbol] ?? {};
-    const p = profileMap[s.symbol] ?? {};
-    return {
-      ticker:  s.symbol,
-      name:    s.companyName ?? p.companyName ?? s.symbol,
-      price:   q.price ?? s.price ?? 0,
-      change:  q.changesPercentage ? `${q.changesPercentage > 0 ? "+" : ""}${q.changesPercentage.toFixed(2)}%` : "—",
-      up:      (q.changesPercentage ?? 0) >= 0,
-      pe:      q.pe ? Math.round(q.pe) : null,
-      rev:     s.revenueGrowth ? `+${(s.revenueGrowth * 100).toFixed(0)}%` : "—",
-      cap:     s.marketCap ? `${(s.marketCap / 1e9).toFixed(0)}B` : "—",
-      score:   aiScore(s, q, p),
-      sector:  p.sector ?? s.sector ?? "—",
-      reasons: [
-        s.revenueGrowth > 0.2  ? `Rev +${(s.revenueGrowth*100).toFixed(0)}%` : null,
-        p.returnOnEquity > 0.15 ? `ROE ${(p.returnOnEquity*100).toFixed(0)}%`  : null,
-        p.debtToEquity < 1      ? "Low Debt"                                    : null,
-        q.pe && q.pe < 25       ? `P/E ${Math.round(q.pe)}`                     : null,
-      ].filter(Boolean).slice(0, 3),
-    };
+  const symbols = UNIVERSES[type] ?? UNIVERSES.growth;
+  const params = new URLSearchParams({
+    symbols: symbols.join(","),
+    fields: [
+      "symbol",
+      "shortName",
+      "longName",
+      "regularMarketPrice",
+      "regularMarketChangePercent",
+      "trailingPE",
+      "forwardPE",
+      "marketCap",
+      "regularMarketVolume",
+      "averageDailyVolume3Month",
+      "fiftyDayAverage",
+      "twoHundredDayAverage",
+      "dividendYield",
+    ].join(","),
   });
 
-  // Sort by AI Score desc
-  results.sort((a, b) => b.score - a.score);
+  const response = await fetch(`${YAHOO_QUOTE_URL}?${params}`, {
+    cache: "no-store",
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
 
-  return NextResponse.json({ type, results, count: results.length });
+  if (!response.ok) {
+    return NextResponse.json({ error: "Yahoo Finance quote error", results: [] }, { status: 502 });
+  }
+
+  const data = await response.json();
+  const quotes: YahooQuote[] = data?.quoteResponse?.result ?? [];
+  const results = quotes
+    .filter((quote) => quote.symbol && Number(quote.regularMarketPrice ?? 0) > 0)
+    .map((quote) => {
+      const price = Number(quote.regularMarketPrice ?? 0);
+      const changePct = Number(quote.regularMarketChangePercent ?? 0);
+      const pe = Number(quote.trailingPE ?? quote.forwardPE ?? 0);
+      const score = scoreQuote(type, quote);
+      return {
+        ticker: quote.symbol === "BRK-B" ? "BRKB" : quote.symbol,
+        name: quote.shortName ?? quote.longName ?? quote.symbol,
+        price,
+        change: formatPct(changePct),
+        up: changePct >= 0,
+        pe: pe > 0 ? Math.round(pe) : null,
+        rev: changePct !== 0 ? `1D ${formatPct(changePct)}` : "—",
+        cap: formatCap(quote.marketCap),
+        score,
+        sector: "—",
+        reasons: reasonsFor(type, quote),
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+
+  return NextResponse.json({
+    type,
+    source: "yahoo-finance-quote",
+    updatedAt: new Date().toISOString(),
+    results,
+    count: results.length,
+  });
 }
