@@ -136,15 +136,75 @@ function MiniBar({ values, color }: { values: number[]; color: string }) {
 }
 
 type Tab = "overview" | "financials";
+type LivePoint = { time: number; price: number };
+type LiveQuote = { price: number; changePct: number; points: LivePoint[]; updatedAt: string };
+
+function PriceSparkline({ points, positive, label }: { points: LivePoint[]; positive: boolean; label: string }) {
+  if (points.length < 2) return <div style={{ height: 86, borderRadius: 14, background: "var(--bg-raised)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--faint)", fontSize: 12 }}>{label}</div>;
+  const width = 620;
+  const height = 96;
+  const padding = 8;
+  const prices = points.map((point) => point.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const path = points.map((point, index) => {
+    const x = padding + (index / Math.max(points.length - 1, 1)) * (width - padding * 2);
+    const y = height - padding - ((point.price - min) / range) * (height - padding * 2);
+    return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const fillPath = `${path} L${width - padding},${height - padding} L${padding},${height - padding} Z`;
+  const lineColor = positive ? "var(--green)" : "var(--red)";
+  return (
+    <div style={{ marginTop: 20, borderRadius: 16, background: "var(--bg-raised)", border: "1px solid var(--border)", padding: "14px 16px 12px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, color: "var(--muted)", fontSize: 12, fontWeight: 700 }}><span>{label}</span><span style={{ color: lineColor }}>{min.toFixed(2)} - {max.toFixed(2)}</span></div>
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="96" preserveAspectRatio="none" role="img" aria-label={label}>
+        <defs><linearGradient id="stock-detail-live-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={positive ? "#22C55E" : "#EF4444"} stopOpacity="0.28" /><stop offset="100%" stopColor={positive ? "#22C55E" : "#EF4444"} stopOpacity="0" /></linearGradient></defs>
+        <path d={fillPath} fill="url(#stock-detail-live-gradient)" /><path d={path} fill="none" stroke={lineColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
 
 export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
   ticker: string; onBack: () => void; lang?: string;
 }) {
   const TH = lang === "th";
-  const d  = getDefault(ticker);
+  const normalizedTicker = ticker.trim().toUpperCase();
+  const quoteTicker = normalizedTicker === "BRKB" ? "BRK-B" : normalizedTicker;
+  const d  = getDefault(normalizedTicker);
   const [tab, setTab] = useState<Tab>("overview");
-  const [saved, setSaved] = useSavedWatchlistTicker(ticker);
+  const [saved, setSaved] = useSavedWatchlistTicker(normalizedTicker);
   const [alertSaved, setAlertSaved] = useState(false);
+  const [liveQuote, setLiveQuote] = useState<LiveQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadQuote() {
+      setQuoteLoading(true);
+      try {
+        const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(quoteTicker)}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        const quote = Array.isArray(data?.quotes) ? data.quotes[0] : null;
+        const price = Number(quote?.price);
+        if (!Number.isFinite(price) || price <= 0) return;
+        const points = Array.isArray(quote?.points) ? quote.points.map((point: { time?: unknown; price?: unknown }) => ({ time: Number(point.time), price: Number(point.price) })).filter((point: LivePoint) => Number.isFinite(point.time) && Number.isFinite(point.price) && point.price > 0) : [];
+        if (!cancelled) setLiveQuote({ price, changePct: Number(quote?.changePct ?? 0), points, updatedAt: new Date().toISOString() });
+      } catch {
+        // Keep the static fallback when Yahoo is temporarily unavailable.
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    }
+    void loadQuote();
+    const timer = window.setInterval(loadQuote, 30000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [quoteTicker]);
+  const livePrice = liveQuote?.price ?? d.price;
+  const liveChange = liveQuote ? `${liveQuote.changePct >= 0 ? "+" : ""}${liveQuote.changePct.toFixed(2)}%` : d.change;
+  const liveUp = liveQuote ? liveQuote.changePct >= 0 : d.up;
+  const quoteStatus = liveQuote ? `Yahoo Finance \u00b7 ${TH ? "\u0e2d\u0e31\u0e1b\u0e40\u0e14\u0e15" : "Updated"} ${new Date(liveQuote.updatedAt).toLocaleTimeString(TH ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })}` : quoteLoading ? (TH ? "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e14\u0e36\u0e07\u0e23\u0e32\u0e04\u0e32 Yahoo..." : "Loading Yahoo quote...") : (TH ? "\u0e23\u0e32\u0e04\u0e32\u0e2a\u0e33\u0e23\u0e2d\u0e07\u0e08\u0e32\u0e01\u0e10\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25" : "Fallback database price");
 
   const TAB_LABELS: Record<Tab, string> = {
     overview:   TH ? "ภาพรวม"   : "Overview",
@@ -199,13 +259,13 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
 
           {/* Price block */}
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>${d.price.toLocaleString()}</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>${livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "flex-end", marginTop: 6 }}>
-              {d.up ? <TrendingUp size={14} color="var(--green)" /> : <TrendingDown size={14} color="var(--red)" />}
-              <span style={{ fontSize: 16, fontWeight: 800, color: d.up ? "var(--green)" : "var(--red)" }}>{d.change}</span>
+              {liveUp ? <TrendingUp size={14} color="var(--green)" /> : <TrendingDown size={14} color="var(--red)" />}
+              <span style={{ fontSize: 16, fontWeight: 800, color: liveUp ? "var(--green)" : "var(--red)" }}>{liveChange}</span>
             </div>
             <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 4 }}>
-              {TH ? "วันนี้ (ล่าช้า 15 นาที)" : "Today (15 min delay)"}
+              {quoteStatus}
             </div>
           </div>
 
@@ -218,11 +278,17 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
           </div>
         </div>
 
+        <PriceSparkline
+          points={liveQuote?.points ?? []}
+          positive={liveUp}
+          label={TH ? "\u0e01\u0e23\u0e32\u0e1f\u0e23\u0e32\u0e04\u0e32\u0e23\u0e30\u0e2b\u0e27\u0e48\u0e32\u0e07\u0e27\u0e31\u0e19\u0e08\u0e32\u0e01 Yahoo Finance" : "Intraday price chart from Yahoo Finance"}
+        />
+
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
           <button
             onClick={() => {
-              saveTickerToWatchlist(ticker);
+              saveTickerToWatchlist(normalizedTicker);
               setSaved(true);
             }}
             style={{ display: "flex", alignItems: "center", gap: 7, background: saved ? "var(--green)" : "linear-gradient(135deg, var(--accent), var(--cyan))", border: "none", borderRadius: 11, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
@@ -256,7 +322,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
             <Bell size={14} /> {alertSaved ? (TH ? "ตั้งแล้ว" : "Alert Set") : (TH ? "ตั้งแจ้งเตือน" : "Set Alert")}
           </button>
           <button
-            onClick={() => window.open(`https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}`, "_blank", "noopener,noreferrer")}
+            onClick={() => window.open(`https://finance.yahoo.com/quote/${encodeURIComponent(quoteTicker)}`, "_blank", "noopener,noreferrer")}
             style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--bg-raised)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 18px", color: "var(--muted)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
             <ExternalLink size={14} /> {TH ? "ดูบน Yahoo Finance" : "Yahoo Finance"}
           </button>
@@ -302,8 +368,8 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
             </div>
             <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.8 }}>
               {TH
-                ? `จากการวิเคราะห์เชิงสถิติ ${ticker} มี AI Score ที่ ${d.score}/100 ด้วยปัจจัย ${d.reasons.join(", ")} ราคาปัจจุบัน $${d.price.toLocaleString()} Market Cap ${d.cap}`
-                : `Statistical analysis shows ${ticker} with AI Score ${d.score}/100 based on ${d.reasons.join(", ")}. Current price $${d.price.toLocaleString()}, Market Cap ${d.cap}.`}
+                ? `จากการวิเคราะห์เชิงสถิติ ${ticker} มี AI Score ที่ ${d.score}/100 ด้วยปัจจัย ${d.reasons.join(", ")} ราคาปัจจุบัน $${livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} Market Cap ${d.cap}`
+                : `Statistical analysis shows ${ticker} with AI Score ${d.score}/100 based on ${d.reasons.join(", ")}. Current price $${livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}, Market Cap ${d.cap}.`}
             </div>
             <div style={{ marginTop: 12, fontSize: 11, color: "var(--faint)", background: "var(--bg-raised)", borderRadius: 8, padding: "8px 12px" }}>
               ⚠️ {TH ? "ข้อมูลเชิงสถิติเท่านั้น ไม่ถือเป็นคำแนะนำการลงทุน ผู้ลงทุนควรศึกษาข้อมูลเพิ่มเติม" : "Statistical data only — not investment advice. Investors should conduct independent research."}
