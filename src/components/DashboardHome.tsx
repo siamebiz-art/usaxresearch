@@ -149,6 +149,39 @@ function useDashboardQuotes(symbols = DASHBOARD_QUOTE_SYMBOLS) {
   return { quotes, lastUpdated, isRefreshing };
 }
 
+export type ScreenerCountMap = Record<string, number>;
+
+export function useScreenerCounts() {
+  const [counts, setCounts] = useState<ScreenerCountMap>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCounts() {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/screener?summary=1", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled && data?.counts && typeof data.counts === "object") {
+          setCounts(data.counts);
+        }
+      } catch {
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void loadCounts();
+    const timer = window.setInterval(loadCounts, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  return { counts, loading };
+}
+
 function liveTimeLabel(date: Date | null, lang: string) {
   if (!date) return lang === "th" ? "กำลังดึงราคา" : "Loading quotes";
   return `${lang === "th" ? "อัปเดต" : "Updated"} ${date.toLocaleTimeString(lang === "th" ? "th-TH" : "en-US", {
@@ -391,6 +424,7 @@ function MarketMiniStrip({ lang }: { lang: string }) {
 // ── Screener Row (legacy — kept for backward compat) ─────────
 function ScreenerRow({ lang }: { lang: string }) {
   const [page, setPage] = useState(0);
+  const { counts, loading: countsLoading } = useScreenerCounts();
   const perPage = 6;
   const pages   = Math.ceil(SCREENERS.length / perPage);
   const visible = SCREENERS.slice(page * perPage, page * perPage + perPage);
@@ -436,7 +470,7 @@ function ScreenerRow({ lang }: { lang: string }) {
               {lang === "th" ? sc.desc : sc.desc_en}
             </div>
             <div style={{ display: "inline-flex", alignSelf: "flex-start", background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: "#fff" }}>
-              {lang === "th" ? `พบ ${sc.count} ตัว` : `${sc.count} stocks`}
+              {countsLoading ? (lang === "th" ? "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e14\u0e36\u0e07..." : "Loading...") : (lang === "th" ? `\u0e1e\u0e1a ${counts[sc.id] ?? sc.count} \u0e15\u0e31\u0e27` : `${counts[sc.id] ?? sc.count} stocks`)}
             </div>
           </div>
         ))}

@@ -11,7 +11,7 @@ import {
 import { DisclaimerBanner, DisclaimerFooter } from "./Disclaimer";
 import PaymentModal from "./PaymentModal";
 import { useLang } from "@/lib/LangContext";
-import { SCREENERS } from "./DashboardHome";
+import { SCREENERS, useScreenerCounts } from "./DashboardHome";
 import ScreenerResults from "./ScreenerResults";
 import SettingsPage from "./SettingsPage";
 import ComparePage from "./ComparePage";
@@ -528,6 +528,7 @@ function ScreenerPage({ selectedId, setSelectedId, lang }: {
   lang: string;
 }) {
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
+  const { counts, loading: countsLoading } = useScreenerCounts();
 
   if (selectedId) {
     const sc = SCREENERS.find(s => s.id === selectedId);
@@ -583,7 +584,7 @@ function ScreenerPage({ selectedId, setSelectedId, lang }: {
             </div>
             <div className="screener-card-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 7, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: "#fff" }}>
-                {lang === "th" ? `พบ ${sc.count} ตัว` : `${sc.count} stocks`}
+                {countsLoading ? (lang === "th" ? "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e14\u0e36\u0e07..." : "Loading...") : (lang === "th" ? `\u0e1e\u0e1a ${counts[sc.id] ?? sc.count} \u0e15\u0e31\u0e27` : `${counts[sc.id] ?? sc.count} stocks`)}
               </div>
               <ArrowRight size={14} color="rgba(255,255,255,0.55)" />
             </div>

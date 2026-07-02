@@ -183,7 +183,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
     async function loadQuote() {
       setQuoteLoading(true);
       try {
-        const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(quoteTicker)}`, { cache: "no-store" });
+        const response = await fetch(`/api/quotes?symbols=${encodeURIComponent(quoteTicker)}&t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const data = await response.json();
         const quote = Array.isArray(data?.quotes) ? data.quotes[0] : null;
@@ -201,9 +201,12 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
     const timer = window.setInterval(loadQuote, 30000);
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [quoteTicker]);
-  const livePrice = liveQuote?.price ?? d.price;
-  const liveChange = liveQuote ? `${liveQuote.changePct >= 0 ? "+" : ""}${liveQuote.changePct.toFixed(2)}%` : d.change;
-  const liveUp = liveQuote ? liveQuote.changePct >= 0 : d.up;
+  const livePrice = liveQuote?.price ?? null;
+  const displayPrice = livePrice == null ? "--" : livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const priceLabel = livePrice == null ? "--" : "$" + displayPrice;
+  const summaryPrice = livePrice == null ? "N/A" : priceLabel;
+  const liveChange = liveQuote ? `${liveQuote.changePct >= 0 ? "+" : ""}${liveQuote.changePct.toFixed(2)}%` : "--";
+  const liveUp = liveQuote ? liveQuote.changePct >= 0 : true;
   const quoteStatus = liveQuote ? `Yahoo Finance \u00b7 ${TH ? "\u0e2d\u0e31\u0e1b\u0e40\u0e14\u0e15" : "Updated"} ${new Date(liveQuote.updatedAt).toLocaleTimeString(TH ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })}` : quoteLoading ? (TH ? "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e14\u0e36\u0e07\u0e23\u0e32\u0e04\u0e32 Yahoo..." : "Loading Yahoo quote...") : (TH ? "\u0e23\u0e32\u0e04\u0e32\u0e2a\u0e33\u0e23\u0e2d\u0e07\u0e08\u0e32\u0e01\u0e10\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25" : "Fallback database price");
 
   const TAB_LABELS: Record<Tab, string> = {
@@ -259,7 +262,7 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
 
           {/* Price block */}
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>${livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>{priceLabel}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "flex-end", marginTop: 6 }}>
               {liveUp ? <TrendingUp size={14} color="var(--green)" /> : <TrendingDown size={14} color="var(--red)" />}
               <span style={{ fontSize: 16, fontWeight: 800, color: liveUp ? "var(--green)" : "var(--red)" }}>{liveChange}</span>
@@ -368,8 +371,8 @@ export default function StockDetailPage({ ticker, onBack, lang = "th" }: {
             </div>
             <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.8 }}>
               {TH
-                ? `จากการวิเคราะห์เชิงสถิติ ${ticker} มี AI Score ที่ ${d.score}/100 ด้วยปัจจัย ${d.reasons.join(", ")} ราคาปัจจุบัน $${livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} Market Cap ${d.cap}`
-                : `Statistical analysis shows ${ticker} with AI Score ${d.score}/100 based on ${d.reasons.join(", ")}. Current price $${livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}, Market Cap ${d.cap}.`}
+                ? `จากการวิเคราะห์เชิงสถิติ ${ticker} มี AI Score ที่ ${d.score}/100 ด้วยปัจจัย ${d.reasons.join(", ")} ราคาปัจจุบัน ${summaryPrice} Market Cap ${d.cap}`
+                : `Statistical analysis shows ${ticker} with AI Score ${d.score}/100 based on ${d.reasons.join(", ")}. Current price ${summaryPrice}, Market Cap ${d.cap}.`}
             </div>
             <div style={{ marginTop: 12, fontSize: 11, color: "var(--faint)", background: "var(--bg-raised)", borderRadius: 8, padding: "8px 12px" }}>
               ⚠️ {TH ? "ข้อมูลเชิงสถิติเท่านั้น ไม่ถือเป็นคำแนะนำการลงทุน ผู้ลงทุนควรศึกษาข้อมูลเพิ่มเติม" : "Statistical data only — not investment advice. Investors should conduct independent research."}

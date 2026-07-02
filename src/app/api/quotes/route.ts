@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const YAHOO_CHART_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
+const YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v7/finance/quote";
 
 function normalizeSymbols(value: string | null) {
   return [
@@ -23,11 +24,33 @@ type YahooQuote = {
   points: Array<{ time: number; price: number }>;
 };
 
+type YahooQuoteResult = {
+  symbol?: string;
+  regularMarketPrice?: number;
+  regularMarketChangePercent?: number;
+  regularMarketPreviousClose?: number;
+};
+
 export async function GET(req: NextRequest) {
   const symbols = normalizeSymbols(req.nextUrl.searchParams.get("symbols"));
   if (!symbols.length) {
     return NextResponse.json({ quotes: [] });
   }
+
+  const quoteParams = new URLSearchParams({
+    symbols: symbols.join(","),
+    fields: "symbol,regularMarketPrice,regularMarketChangePercent,regularMarketPreviousClose",
+  });
+  const quoteResponse = await fetch(`${YAHOO_QUOTE_URL}?${quoteParams}`, {
+    cache: "no-store",
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
+  const quoteData = quoteResponse.ok ? await quoteResponse.json() : null;
+  const quoteMap = new Map<string, YahooQuoteResult>();
+  const quoteResults: YahooQuoteResult[] = quoteData?.quoteResponse?.result ?? [];
+  quoteResults.forEach((quote) => {
+    if (quote.symbol) quoteMap.set(quote.symbol.toUpperCase(), quote);
+  });
 
   const quotes = await Promise.all(
     symbols.map(async (symbol) => {
@@ -43,9 +66,12 @@ export async function GET(req: NextRequest) {
       const data = await response.json();
       const result = data?.chart?.result?.[0];
       const meta = result?.meta;
-      const price = Number(meta?.regularMarketPrice ?? meta?.previousClose ?? 0);
-      const previousClose = Number(meta?.previousClose ?? 0);
-      const changePct = previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0;
+      const quote = quoteMap.get(symbol);
+      const chartPrice = Number(meta?.regularMarketPrice ?? meta?.previousClose ?? 0);
+      const price = Number(quote?.regularMarketPrice ?? chartPrice);
+      const previousClose = Number(quote?.regularMarketPreviousClose ?? meta?.previousClose ?? 0);
+      const chartChangePct = previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0;
+      const changePct = Number.isFinite(quote?.regularMarketChangePercent) ? Number(quote?.regularMarketChangePercent) : chartChangePct;
       const timestamps = Array.isArray(result?.timestamp) ? result.timestamp : [];
       const closes = Array.isArray(result?.indicators?.quote?.[0]?.close) ? result.indicators.quote[0].close : [];
       const rawPoints = closes

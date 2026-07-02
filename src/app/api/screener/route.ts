@@ -100,6 +100,35 @@ function reasonsFor(type: string, quote: YahooQuote) {
 }
 
 export async function GET(req: NextRequest) {
+  const wantsSummary = req.nextUrl.searchParams.get("summary") === "1";
+  if (wantsSummary) {
+    const symbols = [...new Set(Object.values(UNIVERSES).flat())];
+    const params = new URLSearchParams({
+      symbols: symbols.join(","),
+      fields: "symbol,regularMarketPrice",
+    });
+    const response = await fetch(`${YAHOO_QUOTE_URL}?${params}`, {
+      cache: "no-store",
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    if (!response.ok) {
+      return NextResponse.json({ error: "Yahoo Finance quote error", counts: {} }, { status: 502 });
+    }
+    const data = await response.json();
+    const validSymbols = new Set<string>((data?.quoteResponse?.result ?? [])
+      .filter((quote: YahooQuote) => quote.symbol && Number(quote.regularMarketPrice ?? 0) > 0)
+      .map((quote: YahooQuote) => String(quote.symbol).toUpperCase()));
+    const counts = Object.fromEntries(Object.entries(UNIVERSES).map(([id, list]) => [
+      id,
+      list.filter((symbol) => validSymbols.has(symbol.toUpperCase())).length,
+    ]));
+    return NextResponse.json({
+      source: "yahoo-finance-quote",
+      updatedAt: new Date().toISOString(),
+      counts,
+    });
+  }
+
   const type = req.nextUrl.searchParams.get("type") ?? "growth";
   const symbols = UNIVERSES[type] ?? UNIVERSES.growth;
   const params = new URLSearchParams({
@@ -153,8 +182,7 @@ export async function GET(req: NextRequest) {
         reasons: reasonsFor(type, quote),
       };
     })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
+    .sort((a, b) => b.score - a.score);
 
   return NextResponse.json({
     type,
