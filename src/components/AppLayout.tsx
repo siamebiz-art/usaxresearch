@@ -6,7 +6,7 @@ import {
   Globe, Newspaper, Calendar, TrendingUp, FileText, Lightbulb, BookOpen,
   Search, ChevronDown, Sun, Moon, LogOut, Settings, Menu, X,
   Crown, Zap, TrendingDown, Rocket, Gem, BarChart2, Cpu, ShieldCheck,
-  Coins, DollarSign, ArrowRight,
+  Coins, DollarSign, ArrowRight, History,
 } from "lucide-react";
 import { DisclaimerBanner, DisclaimerFooter } from "./Disclaimer";
 import PaymentModal from "./PaymentModal";
@@ -26,6 +26,7 @@ import EconomicCalendarPage from "./EconomicCalendarPage";
 import AnalysisPage from "./AnalysisPage";
 import IdeasPage from "./IdeasPage";
 import EducationPage from "./EducationPage";
+import BacktestPage from "./BacktestPage";
 import { loadUserNotifications, markNotificationsRead, type UserNotification } from "@/lib/user-alerts";
 
 const supabase = createClient(
@@ -42,6 +43,7 @@ const NAV: NavItem[] = [
   { id: "watchlist", group: "tools",    icon: <Star           size={16} /> },
   { id: "portfolio", group: "tools",    icon: <Briefcase      size={16} /> },
   { id: "compare",   group: "tools",    icon: <ArrowLeftRight size={16} /> },
+  { id: "backtest",  group: "tools",    icon: <History        size={16} />, isNew: true },
   { id: "market",    group: "research", icon: <Globe          size={16} /> },
   { id: "news",      group: "research", icon: <Newspaper      size={16} /> },
   { id: "earnings",  group: "research", icon: <Calendar       size={16} /> },
@@ -61,6 +63,7 @@ const NAV_LABELS: Record<string, Record<string, string>> = {
   dashboard: { th: "แดชบอร์ด",          en: "Dashboard" },
   screener:  { th: "คัดหุ้นด้วย AI",    en: "AI Screener" },
   compare:   { th: "เปรียบเทียบหุ้น",   en: "Compare Stocks" },
+  backtest:  { th: "จำลองย้อนหลัง",     en: "Backtest" },
   watchlist: { th: "AI Watchlist",      en: "AI Watchlist" },
   portfolio: { th: "Portfolio Analysis",en: "Portfolio Analysis" },
   "stock-detail": { th: "รายละเอียดหุ้น", en: "Stock Detail" },
@@ -808,6 +811,7 @@ export default function AppLayout({ children }: { children?: React.ReactNode }) 
     if (active === "dashboard" && children) return children;
     if (active === "screener") return <ScreenerPage selectedId={selectedScreener} setSelectedId={setSelectedScreener} lang={lang} />;
     if (active === "compare")  return <ComparePage lang={lang} />;
+    if (active === "backtest") return <BacktestPage lang={lang} />;
     if (active === "watchlist")return <WatchlistPage lang={lang} />;
     if (active === "market")   return <MarketOverviewPage lang={lang} />;
     if (active === "earnings") return <EarningsPage lang={lang} />;

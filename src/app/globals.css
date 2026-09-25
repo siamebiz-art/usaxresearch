@@ -20,6 +20,8 @@
   --orange:    #F97316;
   --red:       #EF4444;
   --teal:      #14B8A6;
+  --bt-dca:    #2563EB;
+  --bt-dip:    #EA580C;
   --shadow:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
 
@@ -46,6 +48,8 @@
   --orange:    #FB923C;
   --red:       #F87171;
   --teal:      #2DD4BF;
+  --bt-dca:    #3B82F6;
+  --bt-dip:    #EA580C;
   --shadow:    0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
 }
