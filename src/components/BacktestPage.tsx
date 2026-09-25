@@ -5,7 +5,11 @@ import { simulate, rolling, rollingHigh, type Bar, type Result, type RollingRun 
 
 type Lang = "th" | "en";
 
-const PRESETS = ["SPY", "QQQ", "VOO", "AAPL", "MSFT", "NVDA"];
+// "10 นางฟ้า" = the Magnificent 7 plus Palantir, Broadcom and AMD.
+const PRESET_GROUPS = [
+  { key: "index", tickers: ["SPY", "QQQ", "VOO"] },
+  { key: "angels", tickers: ["NVDA", "MSFT", "AAPL", "GOOGL", "AMZN", "META", "TSLA", "AVGO", "PLTR", "AMD"] },
+] as const;
 const DIPS = [5, 10, 15, 20, 30];
 const HORIZONS = [5, 10, 15];
 const LOOKBACK = 252; // ≈ 1 trading year
@@ -19,6 +23,8 @@ const T = {
     title: "จำลองย้อนหลัง: DCA ทุกสิ้นเดือน vs ซื้อตอนย่อ",
     sub: "ใส่เงินเท่ากันทุกเดือน แล้วดูว่าวิธีไหนเหลือเงินมากกว่า ด้วยราคาจริงย้อนหลัง (รวมปันผล)",
     ticker: "หุ้น / กองทุน ETF",
+    groups: { index: "กองทุนดัชนี", angels: "หุ้น 10 นางฟ้า" } as Record<string, string>,
+    shortHistory: (y: number) => `ตัวนี้มีข้อมูลให้จำลองได้ตั้งแต่ปี ${y}`,
     start: "เริ่มปี",
     end: "ถึงปี",
     toToday: "ถึงวันนี้",
@@ -74,6 +80,8 @@ const T = {
     title: "Backtest: Monthly DCA vs Buy the Dip",
     sub: "Same money every month — which approach ends with more? Real historical prices, dividends included.",
     ticker: "Stock / ETF",
+    groups: { index: "Index funds", angels: "Magnificent 10" } as Record<string, string>,
+    shortHistory: (y: number) => `This ticker can be simulated from ${y} onward`,
     start: "Start year",
     end: "End year",
     toToday: "to today",
@@ -394,9 +402,19 @@ export default function BacktestPage({ lang }: { lang: string }) {
             <input value={tickerInput} onChange={e => setTickerInput(e.target.value.toUpperCase())} style={{ ...input, flex: 1, minWidth: 0 }} maxLength={12} aria-label={t.ticker} />
             <button type="submit" style={{ height: 40, padding: "0 16px", borderRadius: 10, border: "none", background: "var(--accent)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", flexShrink: 0 }}>{t.run}</button>
           </form>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {PRESETS.map(p => <Chip key={p} on={ticker === p} onClick={() => { setTickerInput(p); setTicker(p); }}>{p}</Chip>)}
+          <div style={{ display: "grid", gap: 10 }}>
+            {PRESET_GROUPS.map(g => (
+              <div key={g.key}>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--faint)", marginBottom: 5 }}>{t.groups[g.key]}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {g.tickers.map(p => <Chip key={p} on={ticker === p} onClick={() => { setTickerInput(p); setTicker(p); }}>{p}</Chip>)}
+                </div>
+              </div>
+            ))}
           </div>
+          {bars && startYear < firstYear && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>{t.shortHistory(firstYear)}</div>
+          )}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
           <label>

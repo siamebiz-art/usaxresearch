@@ -42,6 +42,8 @@ for (const d of [10, 20]) { const s = simulate(bars, { ...base, dipPct: d, cashR
 const r4 = rolling(bars, { monthly: 500, dipPct: 10, lookbackDays: 252, cashRatePct: 4 }, 10);
 console.log(`rolling 10y dip10% +4% cash: dip wins ${r4.filter(x=>x.diffPct>0).length}/${r4.length}`);
 // 8. a closed range 2000-01..2010-12 must collect exactly 132 monthly deposits, the last on the final bar
+if (bars[0].d > "2000-01-01") console.log("SKIP range 2000-2010 (history starts " + bars[0].d + ")"); else {
 const rs = idx("2000-01-01"); let re = rs; while (bars[re + 1].d <= "2010-12-31") re++;
 const rr = simulate(bars, { ...base, dipPct: 10, start: rs, end: re });
 ok(rr.months === 132 && rr.invested === 66000 && rr.dca.cash === 0, `range 2000-2010: ${rr.months} months, invested ${rr.invested}, ends ${bars[re].d}`);
+}
