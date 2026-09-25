@@ -41,3 +41,7 @@ ok(Math.abs(c.dip.irr - 0.04) < 0.001, `cash-only at 4%/yr → IRR ${(c.dip.irr*
 for (const d of [10, 20]) { const s = simulate(bars, { ...base, dipPct: d, cashRatePct: 4 }); console.log(`dip ${d}% +4% cash: DIP ${s.dip.value.toFixed(0)} interest ${s.dip.interest.toFixed(0)} vs DCA ${s.dca.value.toFixed(0)}`); }
 const r4 = rolling(bars, { monthly: 500, dipPct: 10, lookbackDays: 252, cashRatePct: 4 }, 10);
 console.log(`rolling 10y dip10% +4% cash: dip wins ${r4.filter(x=>x.diffPct>0).length}/${r4.length}`);
+// 8. a closed range 2000-01..2010-12 must collect exactly 132 monthly deposits, the last on the final bar
+const rs = idx("2000-01-01"); let re = rs; while (bars[re + 1].d <= "2010-12-31") re++;
+const rr = simulate(bars, { ...base, dipPct: 10, start: rs, end: re });
+ok(rr.months === 132 && rr.invested === 66000 && rr.dca.cash === 0, `range 2000-2010: ${rr.months} months, invested ${rr.invested}, ends ${bars[re].d}`);

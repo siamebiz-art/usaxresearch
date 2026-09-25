@@ -20,6 +20,8 @@ const T = {
     sub: "ใส่เงินเท่ากันทุกเดือน แล้วดูว่าวิธีไหนเหลือเงินมากกว่า ด้วยราคาจริงย้อนหลัง (รวมปันผล)",
     ticker: "หุ้น / กองทุน ETF",
     start: "เริ่มปี",
+    end: "ถึงปี",
+    toToday: "ถึงวันนี้",
     monthly: "เงินต่อเดือน (USD)",
     dip: "ซื้อเมื่อราคาต่ำกว่าจุดสูงสุดใน 1 ปี",
     cash: "เงินที่รอซื้อได้ดอกเบี้ย (%/ปี)",
@@ -73,6 +75,8 @@ const T = {
     sub: "Same money every month — which approach ends with more? Real historical prices, dividends included.",
     ticker: "Stock / ETF",
     start: "Start year",
+    end: "End year",
+    toToday: "to today",
     monthly: "Monthly amount (USD)",
     dip: "Buy when price is below its 1-year high by",
     cash: "Interest on waiting cash (%/yr)",
@@ -311,6 +315,7 @@ export default function BacktestPage({ lang }: { lang: string }) {
   const [data, setData] = useState<{ ticker: string; bars: Bar[]; name: string } | null>(null);
   const [failed, setFailed] = useState("");
   const [startYear, setStartYear] = useState(2006);
+  const [endYear, setEndYear] = useState(9999); // 9999 = latest data
   const [monthly, setMonthly] = useState(500);
   const [dipPct, setDipPct] = useState(10);
   const [cashRate, setCashRate] = useState(0);
@@ -336,9 +341,13 @@ export default function BacktestPage({ lang }: { lang: string }) {
   const name = data?.name ?? "";
 
   const firstYear = bars ? +bars[Math.min(bars.length - 1, LOOKBACK)].d.slice(0, 4) + 1 : 2000;
-  const lastYear = bars ? +bars[bars.length - 1].d.slice(0, 4) - 1 : new Date().getFullYear() - 1;
+  const dataLastYear = bars ? +bars[bars.length - 1].d.slice(0, 4) : new Date().getFullYear();
+  const lastYear = dataLastYear - 1;
   const years = Array.from({ length: Math.max(0, lastYear - firstYear + 1) }, (_, i) => firstYear + i);
   const effStart = Math.min(Math.max(startYear, firstYear), lastYear);
+  // End year runs through Dec 31 of that year; the current year means "up to the latest close".
+  const effEnd = Math.min(Math.max(endYear, effStart), dataLastYear);
+  const endYears = Array.from({ length: Math.max(0, dataLastYear - effStart + 1) }, (_, i) => effStart + i);
 
   const hi = useMemo(() => bars ? rollingHigh(bars, LOOKBACK) : null, [bars]);
 
@@ -346,8 +355,10 @@ export default function BacktestPage({ lang }: { lang: string }) {
     if (!bars || !hi || monthly <= 0) return null;
     const start = bars.findIndex(b => b.d >= `${effStart}-01-01`);
     if (start < 0) return null;
-    return simulate(bars, { monthly, dipPct, lookbackDays: LOOKBACK, cashRatePct: cashRate, start, end: bars.length - 1 }, hi);
-  }, [bars, hi, effStart, monthly, dipPct, cashRate]);
+    let end = bars.length - 1;
+    while (end > start && bars[end].d > `${effEnd}-12-31`) end--;
+    return simulate(bars, { monthly, dipPct, lookbackDays: LOOKBACK, cashRatePct: cashRate, start, end }, hi);
+  }, [bars, hi, effStart, effEnd, monthly, dipPct, cashRate]);
 
   const runs = useMemo(() => bars && monthly > 0 ? rolling(bars, { monthly, dipPct, lookbackDays: LOOKBACK, cashRatePct: cashRate }, horizon) : [],
     [bars, monthly, dipPct, cashRate, horizon]);
@@ -392,6 +403,12 @@ export default function BacktestPage({ lang }: { lang: string }) {
             <span style={label}>{t.start}</span>
             <select value={effStart} onChange={e => setStartYear(+e.target.value)} style={input} disabled={!bars}>
               {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </label>
+          <label>
+            <span style={label}>{t.end}</span>
+            <select value={effEnd} onChange={e => setEndYear(+e.target.value === dataLastYear ? 9999 : +e.target.value)} style={input} disabled={!bars}>
+              {endYears.map(y => <option key={y} value={y}>{y === dataLastYear ? `${y} (${t.toToday})` : y}</option>)}
             </select>
           </label>
           <label>

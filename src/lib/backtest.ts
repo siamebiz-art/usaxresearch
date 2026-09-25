@@ -90,7 +90,8 @@ export function simulate(bars: Bar[], o: Options, hi = rollingHigh(bars, o.lookb
 
   for (let i = o.start; i <= o.end; i++) {
     const p = bars[i].p;
-    const monthEnd = i < o.end && isMonthEnd(bars, i);
+    // The newest bar has no next bar, so an unfinished month never counts as a month-end.
+    const monthEnd = isMonthEnd(bars, i);
 
     if (dipCash > 0 && dailyRate > 0 && i > o.start) {
       const gain = dipCash * (Math.pow(1 + dailyRate, (ts(bars[i].d) - ts(bars[i - 1].d)) / 31557600000) - 1);
