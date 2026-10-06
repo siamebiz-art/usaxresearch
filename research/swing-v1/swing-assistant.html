@@ -1,0 +1,431 @@
+<title>Swing Assistant ระยะ 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column for the findings, widening to a two-pane app frame for the sample screens. */
+:root {
+  --bg: #F3F7F6; --surface: #FFFFFF; --raised: #EAF1EF; --ink: #10201E; --muted: #566865; --line: #D8E3E0;
+  --accent: #0F766E; --accent-soft: #D7EFEB; --good: #15803D; --good-soft: #DDF3E4; --warn: #A65F06; --warn-soft: #FBEFD9;
+  --bad: #B42318; --bad-soft: #FBE3E0; --neutral-mark: #8FA19D;
+  --f-display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans Thai", "Noto Sans Thai", system-ui, sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1615; --surface: #142120; --raised: #1B2C2A; --ink: #E4EEEC; --muted: #93A6A2; --line: #263936; --accent: #2CC3B0; --accent-soft: #123B37; --good: #4ADE80; --good-soft: #14321F; --warn: #F3B34C; --warn-soft: #3A2A0E;
+  --bad: #F87171; --bad-soft: #3B1715; --neutral-mark: #5E716D; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0D1615; --surface: #142120; --raised: #1B2C2A; --ink: #E4EEEC; --muted: #93A6A2; --line: #263936; --accent: #2CC3B0; --accent-soft: #123B37; --good: #4ADE80; --good-soft: #14321F; --warn: #F3B34C; --warn-soft: #3A2A0E;
+  --bad: #F87171; --bad-soft: #3B1715; --neutral-mark: #5E716D; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.65; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: grid; gap: 44px; }
+.col { max-width: 760px; display: grid; gap: 14px; min-width: 0; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.25; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4.4vw, 40px); font-weight: 700; }
+h2 { font-size: 23px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0 }
+.eyebrow { font-family: var(--f-data); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted) }
+.stages { display: flex; flex-wrap: wrap; gap: 8px; }
+.stage { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; font-size: 13.5px; border: 1px solid var(--line); background: var(--surface); }
+.stage b { font-weight: 600 }
+.dot { width: 8px; height: 8px; border-radius: 99px; background: var(--neutral-mark); flex-shrink: 0 }
+.dot.ok { background: var(--good) } .dot.no { background: var(--bad) }
+.verdict { border-left: 4px solid var(--bad); background: var(--surface); padding: 18px 20px; border-radius: 4px 12px 12px 4px; display: grid; gap: 10px; }
+.verdict h2 { font-size: 21px }
+ul.clean { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13.5px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.chip:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.bars { display: grid; gap: 10px; margin-top: 6px; }
+.bar-row { display: grid; grid-template-columns: minmax(96px, 150px) 1fr; gap: 12px; align-items: center; }
+.bar-label { font-size: 14px; line-height: 1.3 }
+.bar-track { position: relative; height: 26px; }
+.bar { position: absolute; left: 0; top: 4px; height: 18px; border-radius: 0 4px 4px 0; background: var(--neutral-mark); }
+.bar.sig { background: var(--accent) }
+.bar-range { position: absolute; top: 12px; height: 2px; background: var(--ink); opacity: .55 }
+.bar-range::before, .bar-range::after { content: ""; position: absolute; top: -5px; width: 2px; height: 12px; background: var(--ink); }
+.bar-range::before { left: 0 } .bar-range::after { right: 0 }
+.bar-val { position: absolute; top: 3px; font-family: var(--f-data); font-size: 12.5px; white-space: nowrap; color: var(--ink); }
+.contrib { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--muted); }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.14); max-width: 260px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left }
+thead th { font-weight: 600; color: var(--muted); font-size: 12.5px }
+tbody tr.sig td { font-weight: 600 }
+table.wrapcells td, table.wrapcells th { white-space: normal; min-width: 64px; }
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.why .panel { display: grid; gap: 4px; }
+.big { font-family: var(--f-data); font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.rules { counter-reset: r; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.rule { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.rule::before { counter-increment: r; content: counter(r); font-family: var(--f-data); color: var(--accent); font-weight: 500; }
+.rule p + p { margin-top: 2px }
+code, .param { font-family: var(--f-data); font-size: .92em; background: var(--raised); padding: 1px 5px; border-radius: 4px; }
+/* sample screens */
+.screens { display: grid; gap: 14px; }
+.appbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.appbar .name { font-family: var(--f-display); font-weight: 700; font-size: 18px; margin-right: auto; }
+.tag { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+.tag.paper { background: var(--accent-soft); color: var(--accent) }
+.app { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 860px) { .app { grid-template-columns: 1fr } }
+.wl-row { display: grid; grid-template-columns: 64px 108px 1fr 78px; gap: 10px; align-items: center; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 8px; }
+.wl-row:hover { background: var(--raised) }
+.wl-row[aria-selected="true"] { background: var(--accent-soft) }
+.wl-row .tk { font-family: var(--f-data); font-weight: 500; }
+.wl-row .why-s { font-size: 13px; color: var(--muted); line-height: 1.4; min-width: 0 }
+.wl-row .px { text-align: right; font-family: var(--f-data); font-size: 13px; line-height: 1.35 }
+@media (max-width: 520px) { .wl-row { grid-template-columns: 56px 1fr 74px; } .wl-row .why-s { grid-column: 1 / -1; order: 4 } }
+.status { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; text-align: center; white-space: nowrap; }
+.st-signal { background: var(--good-soft); color: var(--good) }
+.st-watch { background: var(--warn-soft); color: var(--warn) }
+.st-wait { background: var(--raised); color: var(--muted) }
+.up { color: var(--good) } .down { color: var(--bad) }
+.plan-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan-head .tk { font-family: var(--f-display); font-size: 24px; font-weight: 700 }
+.levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.lv { border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0 }
+.lv .k { font-size: 12.5px; color: var(--muted) } .lv .v { font-family: var(--f-data); font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+.lv.buy { background: var(--accent-soft) } .lv.stop { background: var(--bad-soft) } .lv.tgt { background: var(--good-soft) }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; font-size: 14px; margin-top: 12px; }
+.kv dt { color: var(--muted) } .kv dd { margin: 0; text-align: right; font-family: var(--f-data); font-variant-numeric: tabular-nums }
+.checks { display: grid; gap: 6px; margin-top: 12px; font-size: 13.5px; }
+.check { display: grid; grid-template-columns: 20px 1fr; gap: 6px; line-height: 1.45 }
+.check .m { font-family: var(--f-data); font-weight: 600 }
+.check.ok .m { color: var(--good) } .check.no .m { color: var(--bad) }
+.note { border-radius: 10px; padding: 10px 12px; font-size: 13.5px; line-height: 1.5; margin-top: 12px; }
+.note.warn { background: var(--warn-soft) } .note.bad { background: var(--bad-soft) }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.btn { font: inherit; font-weight: 600; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn.primary { grid-column: 1 / -1; background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn[disabled] { opacity: .5; cursor: not-allowed }
+.plan-chart text { font-family: var(--f-data); font-size: 11px; fill: var(--muted) }
+.fine { font-size: 12.5px; color: var(--muted); line-height: 1.5 }
+.timeline { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.tl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tl .t { font-family: var(--f-data); white-space: nowrap; text-align: right }
+.tl p { grid-column: 1 / -1; font-size: 14px; color: var(--muted) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header class="col">
+    <span class="eyebrow">ข้อเสนอระยะ 1 · กติกา swing-v1.0 · ราคาปิดล่าสุด <span id="asof"></span></span>
+    <h1>Swing Assistant ระยะ 1</h1>
+    <p class="muted">ระบบช่วยจับจังหวะซื้อขายหุ้นอเมริกาเป็นรอบ: กติกากลยุทธ์รุ่นแรก ผลทดสอบย้อนหลังด้วยข้อมูลจริง ต้นทุนข้อมูล ระยะเวลา และหน้าจอตัวอย่าง</p>
+    <div class="stages" aria-label="สถานะระบบ">
+      <span class="stage"><span class="dot no"></span><b>ระบบทำงานได้</b> ยังไม่มี</span>
+      <span class="stage"><span class="dot ok"></span><b>ทดสอบย้อนหลังแล้ว</b> 2010–2026</span>
+      <span class="stage"><span class="dot no"></span><b>ทดลองเดินหน้าแล้ว</b> ยังไม่ได้ทำ</span>
+    </div>
+  </header>
+
+  <section class="col">
+    <div class="verdict">
+      <span class="eyebrow">คำตอบสั้น</span>
+      <h2>กติการุ่นแรกไม่ผ่าน: ไม่ดีกว่าการสุ่มวันซื้อ และแพ้การซื้อถือห่างมาก</h2>
+      <ul class="clean">
+        <li>สัญญาณ "ย่อในขาขึ้นแล้วเริ่มฟื้น" ชนะกลุ่มควบคุมที่สุ่มวันซื้อ (ใช้จุดออก เป้า และขนาดไม้แบบเดียวกัน) แค่ 3–11 ครั้งจาก 20 ครั้ง ในทุกกลุ่มหุ้นและทุกช่วงเวลา ซึ่งพอ ๆ กับโยนเหรียญ</li>
+        <li>ใส่เงินเท่ากัน (เริ่ม $10,000 เติมเดือนละ $500) ตามสัญญาณได้ผลตอบแทน 1–9% ต่อปี ส่วนซื้อถือหุ้นชุดเดียวกันได้ 9–45% ต่อปี</li>
+        <li>สิ่งเดียวที่ดีกว่าคือพอร์ตลดลงน้อยกว่า (ราว 12–19% เทียบกับ 16–55%) แต่เป็นเพราะเงินอยู่ในหุ้นแค่ครึ่งเดียวของเวลา ไม่ได้มาจากการจับจังหวะ</li>
+      </ul>
+      <p><b>ข้อแนะนำ:</b> ไม่สร้างระยะ 2–4 ด้วยกติกานี้ ถ้าจะไปต่อ ให้ลองกติกาแบบอื่นอีก 2–3 แบบด้วยเครื่องทดสอบชุดนี้ก่อน (ใช้ราว 1–2 วัน ยังไม่ต้องทำหน้าจอ) และสร้างระบบต่อก็ต่อเมื่อมีกติกาที่ผ่านทั้ง 3 ข้อในส่วน "เกณฑ์ไปต่อ" ด้านล่าง</p>
+    </div>
+  </section>
+
+  <section class="col" aria-labelledby="h-results">
+    <span class="eyebrow">หลักฐาน</span>
+    <h2 id="h-results">ผลทดสอบย้อนหลัง</h2>
+    <p>ทุกวิธีใช้หุ้นชุดเดียวกัน ช่วงเวลาเดียวกัน เงินเริ่มและเงินเติมเท่ากัน หักค่าซื้อขายและส่วนต่างราคารวมข้างละ 0.1% ใช้ราคาที่ปรับปันผลและแตกพาร์แล้ว แบ่งข้อมูลเป็น 2 ครึ่ง ครึ่งหลังเป็นข้อมูลที่ไม่ได้ใช้ตอนตั้งกติกา (ค่าทุกตัวตั้งไว้ก่อนทดสอบ ไม่ได้ปรับให้ผลออกมาดี)</p>
+    <div class="panel">
+      <div style="display:grid; gap:10px">
+        <div class="chips" role="group" aria-label="กลุ่มหุ้น" id="u-chips"></div>
+        <div class="chips" role="group" aria-label="ช่วงเวลา" id="p-chips"></div>
+      </div>
+      <p class="fine" style="margin-top:10px" id="scenario-note"></p>
+      <div class="bars" id="bars"></div>
+      <p class="fine" style="margin-top:8px">เส้นประ = เงินที่ใส่ไปทั้งหมด · ขีดคร่อมแถว "สุ่มวันซื้อ" = ผลแย่สุดถึงดีสุดจากการสุ่ม 20 รอบ (แท่งคือค่ากลาง)</p>
+    </div>
+    <div class="scroll">
+      <table id="tbl" aria-label="ตารางผลทดสอบ"></table>
+    </div>
+  </section>
+
+  <section class="col" aria-labelledby="h-why">
+    <span class="eyebrow">ทำไมแพ้</span>
+    <h2 id="h-why">เงินไม่ได้อยู่ในตลาด และไม้ที่เข้าก็ไม่ได้ดีกว่าสุ่ม</h2>
+    <div class="why" id="why"></div>
+    <p>สัญญาณได้กำไรเฉลี่ย <span class="num" id="sigR"></span> ต่อไม้ (R = เงินที่ยอมเสียต่อไม้) แต่การสุ่มวันซื้อก็ได้กำไรต่อไม้ใกล้เคียงกัน และสัญญาณ<span id="rndR"></span> แปลว่ากำไรต่อไม้มาจากการที่หุ้นช่วงนี้ขึ้นเป็นส่วนใหญ่ ไม่ได้มาจากจังหวะ ผลนี้ตรงกับหน้า <a href="https://usaxresearch.vercel.app/backtest">จำลอง DCA vs ซื้อตอนย่อ</a> ที่การรอซื้อตอนย่อแพ้ DCA ทั้ง 272 ครั้ง</p>
+  </section>
+
+  <section class="col" aria-labelledby="h-rules">
+    <span class="eyebrow">กติกา swing-v1.0 (ล็อกเวอร์ชันไว้)</span>
+    <h2 id="h-rules">กติกาที่ทดสอบ</h2>
+    <p>ใช้แท่งรายวันที่ปิดแล้วเท่านั้น ประเมินหลังตลาดสหรัฐปิด (03:00 น. เวลาไทย ช่วงเวลาออมแสง ถึง 1 พ.ย. 2026 · 04:00 น. หลังจากนั้น) และซื้อที่ราคาเปิดของวันถัดไป (20:30 / 21:30 น. เวลาไทย) ราคาจาก Yahoo Finance แบบสิ้นวัน</p>
+    <div class="rules">
+      <div class="rule"><div><p><b>ตลาดรวมเป็นขาขึ้น</b> SPY ปิดเหนือเส้นค่าเฉลี่ย 200 วัน</p></div></div>
+      <div class="rule"><div><p><b>หุ้นเป็นขาขึ้น</b> ราคาปิดเหนือเส้น 200 วัน · เส้น 50 วันอยู่เหนือเส้น 200 วัน · เส้น 200 วันสูงกว่าเมื่อ 20 วันก่อน</p></div></div>
+      <div class="rule"><div><p><b>ย่อพอ</b> จุดต่ำสุดใน 5 วันล่าสุด ต่ำกว่าจุดสูงสุด 20 วัน อย่างน้อย <span class="param">2 × ATR14</span> (ATR = ระยะแกว่งเฉลี่ยต่อวัน) และยังอยู่เหนือเส้น 200 วัน</p></div></div>
+      <div class="rule"><div><p><b>เริ่มฟื้น</b> วันนี้ปิดเหนือจุดสูงของเมื่อวาน และปิดสูงกว่าราคาเปิด</p></div></div>
+      <div class="rule"><div><p><b>สภาพคล่อง</b> มูลค่าซื้อขายเฉลี่ย 20 วัน ≥ <span class="param">$20M</span> ต่อวัน</p></div></div>
+      <div class="rule"><div><p><b>จุดออกเมื่อผิดทาง</b> จุดต่ำสุด 5 วัน − <span class="param">0.25 × ATR</span> · ข้ามถ้าจุดออกห่างเกิน <span class="param">10%</span></p></div></div>
+      <div class="rule"><div><p><b>เป้าทำกำไร</b> ราคาซื้อจริง + <span class="param">2 ×</span> ระยะถึงจุดออก (คำนวณใหม่จากราคาซื้อจริง)</p></div></div>
+      <div class="rule"><div><p><b>หมดอายุและเลยโซน</b> สัญญาณใช้ได้ที่ราคาเปิดวันถัดไปวันเดียว · ไม่ซื้อถ้าเปิดสูงกว่าราคาปิดวันสัญญาณเกิน <span class="param">0.5 × ATR</span> หรือเปิดต่ำกว่าจุดออก</p></div></div>
+      <div class="rule"><div><p><b>ถือครบเวลา</b> ขายที่ราคาเปิดหลังถือครบ <span class="param">20</span> วันทำการ</p></div></div>
+      <div class="rule"><div><p><b>ขนาดไม้</b> เสี่ยง <span class="param">1%</span> ของพอร์ตต่อไม้ · ต่อหุ้นไม่เกิน <span class="param">20%</span> ของพอร์ต · ถือพร้อมกันไม่เกิน <span class="param">5</span> ตัว · ไม่ถัวขาดทุน · ไม่ใช้เงินเกินเงินสดที่มี</p></div></div>
+    </div>
+    <h3 style="margin-top:8px">กติกาของเครื่องทดสอบ</h3>
+    <ul class="clean">
+      <li>ถ้าวันเดียวแตะทั้งเป้าและจุดออก ให้นับว่าแตะจุดออกก่อน (ประเมินแบบระวังไว้ก่อน)</li>
+      <li>ถ้าราคาเปิดกระโดดข้ามจุดออก ขายที่ราคาเปิด ไม่ใช่ที่จุดออก (มี 92 ไม้จาก 1,341 ไม้ที่ขาดทุนเกินแผนแบบนี้)</li>
+      <li>เก็บทุกสัญญาณ รวมไม้ที่ขาดทุนและสัญญาณที่หมดอายุ · ไม้ที่ยังถืออยู่ตอนจบช่วง คิดมูลค่าตามราคาปิดวันสุดท้าย</li>
+      <li>ตรวจตัวทดสอบเองแล้ว: ซื้อถือ MSFT ได้เท่ากับอัตราส่วนราคาจริงพอดี · ไม้ที่ขายที่จุดออกเป็น −1R ทุกไม้ ไม้ที่ขายที่เป้าเป็น +2R ทุกไม้ · <b>ทดสอบกับราคาสุ่มที่ไม่มีทิศทาง 16 ชุด ได้กำไรเฉลี่ย +0.005R ต่อไม้ (แทบเป็นศูนย์)</b> แปลว่าเครื่องทดสอบไม่ได้สร้างกำไรขึ้นมาเอง</li>
+      <li>ใส่หุ้นใหญ่อีก 10 ตัวที่ราคาไม่ได้ไปไหน (INTC, CSCO, IBM, BA, DIS, NKE, PYPL, PFE, VZ, XOM) ไว้คู่กับ 10 นางฟ้า เพราะการทดสอบกับหุ้นที่เรารู้แล้วว่าขึ้นมาก จะทำให้ทุกวิธีดูดีเกินจริง</li>
+    </ul>
+    <h3 style="margin-top:8px">สิ่งที่ยังไม่ได้ทดสอบ</h3>
+    <ul class="clean">
+      <li><b>ตัวกรองวันประกาศงบ</b> ยังไม่ได้ทดสอบ เพราะยังไม่มีประวัติวันประกาศงบย้อนหลังแบบฟรี (แหล่งข้อมูลแบบเสียเงินมีให้)</li>
+      <li>ภาษีและค่าเงิน: ผลทั้งหมดเป็นดอลลาร์ ก่อนภาษี ยังไม่คิดค่าแลกเงินบาท ซึ่งเท่ากันทุกวิธี แต่ค่าซื้อขายจะกระทบวิธีที่ซื้อขายบ่อยมากกว่า</li>
+      <li>ลองดูแล้ว: ถ้าเงินสดที่รอได้ดอกเบี้ย 4% ต่อปี ผลตามสัญญาณดีขึ้น 1–2.5% ต่อปี ยังแพ้ซื้อถือ · ถ้าค่าซื้อขายข้างละ 0.25% ผลตามสัญญาณเหลือ −1.8% ถึง +6.8% ต่อปี</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-screens" style="display:grid; gap:14px">
+    <div class="col">
+      <span class="eyebrow">หน้าจอตัวอย่าง · ข้อมูลจริง ณ ราคาปิด <span class="asof2"></span></span>
+      <h2 id="h-screens">Watchlist + Trade Plan</h2>
+      <p>ทุกสถานะในหน้าจอนี้คำนวณจากกติกา swing-v1.0 กับราคาปิดจริง ไม่ได้แต่งขึ้น กดหุ้นแต่ละตัวเพื่อดูแผนและเหตุผลทีละข้อ ตัวเลขขนาดไม้คิดจากพอร์ตจำลอง $10,000</p>
+    </div>
+    <div class="screens">
+      <div class="appbar">
+        <span class="name">Swing Assistant</span>
+        <span class="tag paper">พอร์ตจำลอง $10,000</span>
+        <span class="tag">ข้อมูลสิ้นวัน · ไม่ใช่ราคาเรียลไทม์</span>
+      </div>
+      <div class="app">
+        <div class="panel" style="padding:12px">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:4px 8px 8px">
+            <h3>หุ้นที่ติดตาม · 10 นางฟ้า</h3>
+            <span class="fine" id="wl-count"></span>
+          </div>
+          <div id="wl" role="listbox" aria-label="หุ้นที่ติดตาม"></div>
+        </div>
+        <div class="panel" id="plan" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="col" aria-labelledby="h-data">
+    <span class="eyebrow">ข้อมูล</span>
+    <h2 id="h-data">แหล่งข้อมูลและค่าใช้จ่ายรายเดือน</h2>
+        <p>ระบบรุ่นแรกใช้แค่ราคาสิ้นวัน จึง<b>ไม่ใช่ระบบติดตามจุดออกแบบเรียลไทม์</b> ถ้าระหว่างวันราคาหลุดจุดออก ระบบจะรู้หลังตลาดปิดแล้วเท่านั้น ราคาด้านล่างคัดมาจากหน้าราคาทางการของแต่ละเจ้า ณ 6 ต.ค. 2026</p>
+    <div class="scroll">
+      <table class="wrapcells" aria-label="เทียบผู้ให้บริการข้อมูล">
+        <thead><tr><th>ผู้ให้บริการ</th><th>แผนที่ใช้ได้</th><th>$/เดือน</th><th>ย้อนถึงปี 2005</th><th>วันประกาศงบ</th><th>ให้คนอื่นดูได้ไหม</th></tr></thead>
+        <tbody>
+          <tr><td>Yahoo Finance</td><td>ไม่มี API ทางการ</td><td class="num">0</td><td>ได้</td><td>ได้</td><td>ไม่ได้ ห้ามใช้เชิงพาณิชย์</td></tr>
+          <tr class="sig"><td>EODHD</td><td>Equity Analyst</td><td class="num">59.99</td><td>ได้</td><td>ได้</td><td>ไม่ได้ (Enterprise $2,499)</td></tr>
+          <tr><td>FMP</td><td>Premium</td><td class="num">69</td><td>ได้</td><td>ได้</td><td>ไม่ได้ (Enterprise ต้องติดต่อ)</td></tr>
+          <tr><td>Tiingo</td><td>Power</td><td class="num">30</td><td>ได้</td><td>ไม่มี</td><td>ไม่ได้ (ใช้ภายในเท่านั้น)</td></tr>
+          <tr><td>Massive (Polygon เดิม)</td><td>Advanced + Benzinga Earnings</td><td class="num">199 + 99</td><td>ได้</td><td>ได้ ตั้งแต่ 2011</td><td>ไม่ได้ (Business $2,499)</td></tr>
+          <tr><td>Alpha Vantage</td><td>Premium</td><td class="num">49.99+</td><td>ได้</td><td>เฉพาะล่วงหน้า</td><td>ไม่ได้ ต้องติดต่อ</td></tr>
+          <tr><td>Alpaca</td><td>Free / Algo Trader Plus</td><td class="num">0 / 99</td><td>ไม่ได้ เริ่ม 2016</td><td>ไม่มี</td><td>ไม่ได้ระบุ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="clean">
+      <li><b>ใช้เองคนเดียว:</b> ระยะ 1.5 ใช้ Yahoo ต่อได้ฟรี ถ้าไปถึงระยะ 2 เลือก <b>EODHD Equity Analyst $59.99 ต่อเดือน</b> เพราะเป็นแผนเดียวที่ราคาถูกและมีครบทั้งราคาย้อนหลังที่ปรับปันผล ราคาล่าสุด และปฏิทินวันประกาศงบ</li>
+      <li><b>เปิดให้คนอื่นใช้:</b> ต้องซื้อสิทธิ์แสดงข้อมูล ราว <b>$2,499 ต่อเดือนขึ้นไป</b> (EODHD Enterprise · Massive Business) และยังมีเรื่องใบอนุญาต ก.ล.ต. อีกข้อ</li>
+      <li>Finnhub ราคาบนหน้าเว็บอ่านไม่ได้ (โหลดด้วย JavaScript) จึงไม่ได้ใส่ไว้ในตาราง ทุกแผนที่สมัครเองได้เขียนว่า "ใช้ส่วนตัว"</li>
+    </ul>
+    <p class="fine">ที่มา: eodhd.com/pricing · eodhd.com/commercial-pricing · site.financialmodelingprep.com/pricing-plans · tiingo.com/about/pricing · massive.com/pricing · massive.com/business · alphavantage.co/premium · alpaca.markets/data</p>
+
+  </section>
+
+  <section class="col" aria-labelledby="h-time">
+    <span class="eyebrow">ประเมินเวลา</span>
+    <h2 id="h-time">ระยะเวลาและต้นทุน</h2>
+    <p>ตัวเลขเวลาเป็นการประเมิน ไม่ใช่ตัวเลขที่วัดมา ระยะ 1 ทำเสร็จแล้วในรอบนี้ ส่วนระยะ 2–4 ควรเริ่มก็ต่อเมื่อมีกติกาที่ผ่านเกณฑ์ไปต่อ</p>
+    <div class="timeline">
+      <div class="tl"><b>ระยะ 1 · กติกา ข้อมูล หน้าจอต้นแบบ</b><span class="t">เสร็จแล้ว</span><p>กติกา v1.0 · เครื่องทดสอบพอร์ตที่ตรวจตัวเองแล้ว · ผลทดสอบ · หน้าจอตัวอย่างนี้</p></div>
+      <div class="tl"><b>ระยะ 1.5 · ลองกติกาอีก 2–3 แบบ</b><span class="t">1–2 วัน</span><p>ใช้เครื่องทดสอบเดิม ไม่ต้องทำหน้าจอ เป็นด่านตัดสินว่าจะไปต่อหรือหยุด</p></div>
+      <div class="tl"><b>ระยะ 2 · เครื่องยนต์สัญญาณในตัวแอป</b><span class="t">1–2 สัปดาห์</span><p>ย้ายเครื่องทดสอบเข้าแอป · Watchlist และ Trade Plan ใช้งานจริง · เก็บประวัติแผนทุกเวอร์ชัน</p></div>
+      <div class="tl"><b>ระยะ 3 · พอร์ตจำลองและแจ้งเตือน</b><span class="t">2 สัปดาห์</span><p>บัญชีผู้ใช้ · ตั้งงบและความเสี่ยง · ประเมินอัตโนมัติหลังตลาดปิดทุกวัน · แจ้งเตือนเมื่อสถานะเปลี่ยน ไม่ส่งซ้ำ</p></div>
+      <div class="tl"><b>ทดลองเดินหน้าด้วยพอร์ตจำลอง</b><span class="t">3–6 เดือน</span><p>เร่งไม่ได้ เพราะต้องรอตลาดเดินจริง ระบบแบบนี้ได้สัญญาณราว 2–3 ไม้ต่อสัปดาห์ เลยต้องใช้เวลาหลายเดือนกว่าจะมีไม้พอให้วัดผล</p></div>
+      <div class="tl"><b>ระยะ 4 · บันทึกการซื้อขายจริงและวัดผล</b><span class="t">1 สัปดาห์</span><p>บันทึกราคาซื้อขายจริง · คำนวณจุดออกใหม่จากราคาจริง · เทียบกับ DCA และซื้อถือแบบต่อเนื่อง</p></div>
+    </div>
+    <h3 style="margin-top:8px">การตัดสินใจทางเทคนิค</h3>
+    <ul class="clean">
+      <li><b>ไม่ใช้ FastAPI แยก</b> เครื่องทดสอบเขียนด้วย TypeScript อยู่แล้วและทำงานในแอป Next.js ได้เลย ระบบจะเหลือที่ deploy ที่เดียว ไม่ต้องดูแลเซิร์ฟเวอร์ Python อีกตัว</li>
+      <li><b>ต้องสร้างโปรเจกต์ Supabase ใหม่</b> (ตัวเดิมของ USAXresearch ถูกลบไปแล้ว) สำหรับบัญชีผู้ใช้ พอร์ตจำลอง และประวัติสัญญาณ ขั้นนี้คุณต้องกดสร้างเองในหน้า Supabase</li>
+      <li><b>ถ้าจะเปิดให้คนอื่นใช้</b> การบอกจุดซื้อขายหุ้นรายตัวให้คนทั่วไป เข้าข่ายการให้คำแนะนำการลงทุนที่ต้องมีใบอนุญาต ก.ล.ต. ถ้าใช้เองคนเดียวไม่มีปัญหา</li>
+    </ul>
+  </section>
+
+  <section class="col" aria-labelledby="h-gate">
+    <span class="eyebrow">เกณฑ์ไปต่อ</span>
+    <h2 id="h-gate">กติกาแบบใหม่ต้องผ่านทั้ง 3 ข้อ ถึงจะสร้างระบบต่อ</h2>
+    <ul class="clean">
+      <li>ชนะกลุ่มควบคุมที่สุ่มวันซื้อ อย่างน้อย 16 ครั้งจาก 20 ครั้ง ทั้งในข้อมูลครึ่งแรกและครึ่งหลัง</li>
+      <li>หลังหักค่าซื้อขายข้างละ 0.25% ยังได้ผลตอบแทนต่อการลดลงสูงสุด ดีกว่าการซื้อถือ SPY</li>
+      <li>ได้ผลทั้งใน 10 นางฟ้าและในกลุ่มหุ้นที่ราคาไม่ได้ไปไหน ไม่ใช่ได้ผลแค่กลุ่มเดียว</li>
+    </ul>
+    <p class="fine">ผลในอดีตไม่ได้รับประกันผลในอนาคต เอกสารนี้ใช้ประกอบการตัดสินใจภายใน ไม่ใช่คำแนะนำการลงทุน</p>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const RESULTS={"all/first":{"c":63500,"s":[79097,4.17,18],"st":{"trades":730,"win":46.8,"aw":5.37,"al":-4.07,"r":0.069,"inv":67},"rm":[81693,4.78,16.6],"rr":[65329,114033],"beat":7,"bh":[208028,21.95,28.2],"dca":[212238,22.32,28.4],"spy":[113445,10.87,19.4]},"all/second":{"c":56500,"s":[73619,5.77,18.8],"st":{"trades":608,"win":44.1,"aw":7.66,"al":-4.73,"r":0.097,"inv":57},"rm":[77662,6.93,20.2],"rr":[59572,89782],"beat":8,"bh":[263597,33.23,44.7],"dca":[248469,31.94,45.4],"spy":[124580,17.06,33.7]},"mag/first":{"c":63500,"s":[88333,6.24,16.6],"st":{"trades":553,"win":45.8,"aw":6.9,"al":-4.75,"r":0.098,"inv":48},"rm":[93242,7.24,12.8],"rr":[78008,120285],"beat":3,"bh":[289828,28.02,33.4],"dca":[298645,28.58,33.4],"spy":[113445,10.87,19.4]},"mag/second":{"c":56500,"s":[83718,8.55,19.1],"st":{"trades":480,"win":47.5,"aw":8.3,"al":-5.45,"r":0.181,"inv":44},"rm":[85633,9.03,19.4],"rr":[62035,110015],"beat":8,"bh":[455689,45.43,54.3],"dca":[425748,43.89,55.3],"spy":[124580,17.06,33.7]},"lag/first":{"c":63500,"s":[75280,3.24,12.5],"st":{"trades":588,"win":47.1,"aw":4.22,"al":-3.23,"r":0.053,"inv":59},"rm":[75782,3.36,17.3],"rr":[60450,91930],"beat":10,"bh":[135570,14.14,16.5],"dca":[134605,14,16.4],"spy":[113445,10.87,19.4]},"lag/second":{"c":56500,"s":[59087,0.98,19.4],"st":{"trades":403,"win":40,"aw":6.54,"al":-4.19,"r":-0.04,"inv":40},"rm":[59069,0.98,27.3],"rr":[52859,72785],"beat":11,"bh":[86365,9.21,35.5],"dca":[84568,8.76,35.3],"spy":[124580,17.06,33.7]}};
+const WATCH=[{"s":"NVDA","c":238.9,"chg":2.12,"st":"signal","ok":[1,1,1,1,1,1],"dep":2.2,"stop":225.55,"tg":265.6,"rp":5.6,"atr":5.92,"hi":240.1,"s50":218.76,"s200":200.69,"last":"2026-10-05","sp":[203.3,211.56,212.26,207.17,202.58,203.05,207.06,211.82,208.53,206.61,196.29,196.79,189.8,194.82,200.53,206.41,211.7,218.97,218.75,223.71,217.31,217.26,223.84,225.05,224.91,224.76,219.49,217.32,216.61,214.48,208.25,212.81,209.43,227.73,217.31,220.53,217.2,224.16,228.19,230.1,225.48,223.42,218.36,218.29,210.96,212.17,213.9,219.34,222.27,227.38,228.87,225.51,224.58,225.07,228.86,227.21,228.38,230.86,233.95,238.9]},{"s":"MSFT","c":525.18,"chg":1.48,"st":"signal","ok":[1,1,1,1,1,1],"dep":2.5,"stop":499.45,"tg":576.65,"rp":4.9,"atr":11.81,"hi":532.35,"s50":490.27,"s200":431.71,"last":"2026-10-05","sp":[390.26,384.21,394.89,400.35,393.08,401.53,397,389.61,380.86,380.98,388.37,392.61,389.81,450.25,463.85,486.73,491.88,486.54,498.92,499.05,505.11,502.86,491.5,495.95,494.47,479.45,480.73,483.4,481.15,483.24,487.31,491.71,496.37,505.06,513.53,507.29,501.02,496.82,510.12,499.7,493.95,491.65,492.44,495.63,505.41,497.12,490.3,497.75,493.78,501.61,498,500.59,497.93,516.17,509.22,508.96,512.9,512.8,517.53,525.18]},{"s":"AAPL","c":332.89,"chg":-0.24,"st":"watch","ok":[1,1,1,0,1,1],"dep":2.8,"stop":324.1,"tg":350.48,"rp":2.6,"atr":6.86,"hi":345.34,"s50":322.36,"s200":289.09,"last":"2026-10-02","sp":[317.04,314.59,327.22,332.97,333.45,326.31,327.46,325.61,321.38,332.73,336.62,339.79,337.9,333.14,308.64,303.16,309.11,310.73,312.14,313.06,308.26,304.91,302.25,305.26,305.93,305.59,310.03,316.83,311.3,309.35,310.34,309.9,313.45,314.58,319.7,316.85,325.13,324.96,328.21,319.97,316.22,315.34,326.57,332.27,333.08,331.34,332.41,337,336.13,338.98,339.75,337.02,335.92,341.07,338.4,329.4,333.02,330.32,333.69,332.89]},{"s":"GOOGL","c":346.47,"chg":0.86,"st":"wait","ok":[1,1,0,1,1,1],"dep":3.3,"stop":333.32,"tg":372.77,"rp":3.8,"atr":8.77,"hi":364.17,"s50":344.77,"s200":338.75,"last":"2026-08-28","sp":[352.28,359.28,370.68,354.23,346.55,351.76,346.93,341.87,317.49,319.53,326.35,333.5,336.49,333.45,355.9,373.27,377.41,362.2,357.52,354.07,357.29,343.58,343.32,346.14,345.68,343.78,343.98,344.5,340.45,344.6,347.84,346.74,341.78,340.43,346.37,339.13,334.8,336.9,342.26,338.46,338.36,330.65,332.6,338.5,349.39,344.98,342.87,347.33,349.54,354.97,351.16,337.83,342.36,343.92,342.75,340.92,344.08,338.24,343.5,346.47]},{"s":"AMZN","c":251.4,"chg":-0.05,"st":"watch","ok":[1,1,1,0,1,1],"dep":2.6,"stop":243.75,"tg":266.69,"rp":3,"atr":5.54,"hi":259.49,"s50":256.93,"s200":241.51,"last":"2026-09-30","sp":[247.31,247.49,254.96,249.89,247.23,249.99,247.55,244.85,233.66,232.11,231.39,230.86,226.65,235.5,271.58,284.02,277.42,272.65,272.26,274.48,278.09,272.27,267.28,265.13,262.65,261.31,259.45,265.84,260.11,258.63,262.07,261.06,260.28,256.26,266.43,259.77,254.92,254.98,258.9,258.51,256.97,252.4,251.89,256.78,253.54,248.42,245.96,251.19,253.71,258.45,254.98,249.27,249.38,249.67,246.15,246.67,249.15,248.23,251.52,251.4]},{"s":"META","c":741.9,"chg":1.9,"st":"wait","ok":[1,0,1,1,1,1],"dep":2.6,"stop":708.85,"tg":808,"rp":4.5,"atr":25.01,"hi":779.82,"s50":627.61,"s200":627.82,"last":null,"sp":[656.21,660.52,680.77,664.02,645.5,645.34,643.3,626.68,605.62,594.72,593.4,592.94,585.15,538.6,556.27,589.77,587.48,588.31,589.43,591.63,594.45,598.65,578.39,594.5,589.38,568.52,543.24,545.6,545.4,549.47,558.58,569.6,575.69,570.65,577.56,571.89,578.08,592.38,610.2,616.28,613,653.17,643.87,647.52,665.08,669.71,672.78,681.77,665.23,741.25,736.6,744.1,777.59,751.66,715.62,738.79,725.18,725.93,728.08,741.9]},{"s":"TSLA","c":378.73,"chg":2.2,"st":"wait","ok":[1,0,0,1,1,1],"dep":3.2,"stop":342.69,"tg":450.8,"rp":9.5,"atr":12.75,"hi":386.83,"s50":348.9,"s200":392.63,"last":null,"sp":[394.76,396.18,394.46,391.06,380.84,369.57,378.93,374.01,319.69,313.03,309.22,307.44,298.32,308.85,311.21,322.08,327.35,321.55,319.53,328.58,330.88,332.81,327.51,339.96,342.27,339.3,336.87,351.12,345.13,362.86,348.95,350.25,345.82,354.81,348.75,367.95,356.09,357.01,376.37,354.08,368.16,367.81,363.56,365.44,358.97,356.58,358.08,366.2,364.27,375.3,378.9,380.12,377.94,372.11,357.45,352.84,354.81,354.11,370.59,378.73]},{"s":"AVGO","c":362.51,"chg":2.08,"st":"wait","ok":[1,0,0,1,1,1],"dep":2.7,"stop":340.61,"tg":406.31,"rp":6,"atr":10.71,"hi":372.02,"s50":372.3,"s200":366.38,"last":null,"sp":[383.35,388.4,393.56,373.77,370.16,377.47,385.8,396.09,391.76,381.23,382.52,380.22,369.65,387.14,388.57,391.52,417.4,417.52,419.81,426.98,421.63,415.32,415.29,417.06,392.28,391.72,379.31,361.82,363.37,367.78,358.11,356.09,354.94,370.86,368.12,369.67,369.01,366.57,356.51,357.25,367.89,363.72,360.17,361.33,344.09,338.65,338.89,346.67,356.96,362.66,364.54,354.99,350.36,352.81,349.57,355.1,351.19,343.64,355.14,362.51]},{"s":"PLTR","c":189.4,"chg":0.34,"st":"wait","ok":[1,1,0,0,1,1],"dep":1.6,"stop":183.26,"tg":201.67,"rp":3.2,"atr":6.19,"hi":194.78,"s50":171.11,"s200":152.11,"last":"2026-09-21","sp":[130.04,133.72,133.76,134.44,132.38,134.85,132.66,124.57,123.37,122.92,131.53,123.53,123,122.26,123.06,125.65,162.66,158.43,155.92,172.01,175.23,174.94,171.04,179.01,174.04,172.55,171.54,175.19,173.96,179.94,175.89,172.73,177.5,185.93,186.29,186.38,179.92,169.46,182.53,174.33,170.3,169.53,165.86,167.23,173.31,172.56,174.34,176.24,177.64,183.09,184.99,191.79,192.59,189.67,187.48,186.97,187.05,190.04,188.75,189.4]},{"s":"AMD","c":631.75,"chg":-0.34,"st":"wait","ok":[1,1,0,0,1,1],"dep":1.9,"stop":594.23,"tg":706.79,"rp":5.9,"atr":23.47,"hi":645.46,"s50":515.73,"s200":376.84,"last":"2026-09-04","sp":[534.39,548.13,529.14,500.94,495.76,503.57,544.43,552.33,539.69,521.95,494.95,454.62,429.56,485.39,476.15,484.64,518.58,482.05,489.28,483.36,469.56,474.32,482.93,483.01,514.39,506,484.39,466.42,469.46,473.25,456.75,479.18,480.93,476.67,465.58,470.72,459.61,457.06,456.16,477.57,505.74,521.1,503.6,516.13,493.41,504.2,512.5,545.09,559.82,615.52,623.77,614.61,629.26,630.63,607.87,607.57,611.76,615.73,633.91,631.75]}];
+const ASOF="2026-10-05";
+
+const $ = s => document.querySelector(s);
+const usd = v => "$" + Math.round(v).toLocaleString("en-US");
+const thDate = d => { const [y, m, dd] = d.split("-").map(Number); const M = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."]; return `${dd} ${M[m - 1]} ${y}`; };
+$("#asof").textContent = thDate(ASOF); document.querySelectorAll(".asof2").forEach(e => e.textContent = thDate(ASOF));
+
+// ── results ─────────────────────────────────────────
+const UNI = [["all", "รวม 20 ตัว"], ["mag", "10 นางฟ้า"], ["lag", "10 ตัวที่ราคาไม่ไปไหน"]];
+const PER = [["first", "ครึ่งแรก 2010–2018"], ["second", "ครึ่งหลัง 2019–ปัจจุบัน"]];
+let U = "all", P = "second";
+function chips(el, list, get, set) {
+  el.innerHTML = list.map(([k, l]) => `<button type="button" class="chip" data-k="${k}" aria-pressed="${k === get()}">${l}</button>`).join("");
+  el.onclick = e => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.k); renderResults(); };
+}
+const tip = $("#tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function renderResults() {
+  chips($("#u-chips"), UNI, () => U, v => U = v); chips($("#p-chips"), PER, () => P, v => P = v);
+  const r = RESULTS[`${U}/${P}`];
+  const rows = [
+    { k: "ตามสัญญาณ v1", v: r.s, sig: true },
+    { k: "สุ่มวันซื้อ (ค่ากลาง)", v: r.rm, range: r.rr },
+    { k: "ซื้อถือ", v: r.bh },
+    { k: "DCA รายเดือน", v: r.dca },
+    { k: "ซื้อถือ SPY", v: r.spy },
+  ];
+  const max = Math.max(...rows.map(x => Math.max(x.v[0], x.range ? x.range[1] : 0))) * 1.18;
+  const pct = v => (v / max * 100).toFixed(2) + "%";
+  $("#scenario-note").textContent = `ใส่เงินรวม ${usd(r.c)} · สัญญาณชนะการสุ่ม ${r.beat} จาก 20 รอบ`;
+  $("#bars").innerHTML = rows.map((x, i) => `
+    <div class="bar-row" data-i="${i}">
+      <div class="bar-label">${x.k}</div>
+      <div class="bar-track">
+        <div class="bar ${x.sig ? "sig" : ""}" style="width:${pct(x.v[0])}"></div>
+        ${x.range ? `<div class="bar-range" style="left:${pct(x.range[0])}; width:calc(${pct(x.range[1])} - ${pct(x.range[0])})"></div>` : ""}
+        <span class="bar-val" style="left:calc(${pct(x.range ? Math.max(x.v[0], x.range[1]) : x.v[0])} + 6px)">${usd(x.v[0])}</span>
+        <div class="contrib" style="left:${pct(r.c)}"></div>
+      </div>
+    </div>`).join("");
+  $("#bars").onpointermove = e => { const row = e.target.closest(".bar-row"); if (!row) { tip.hidden = true; return; } const x = rows[+row.dataset.i];
+    showTip(e, `<b>${x.k}</b><br>มูลค่าสุดท้าย ${usd(x.v[0])}<br>ผลตอบแทน ${x.v[1]}% ต่อปี<br>พอร์ตลดลงสูงสุด ${x.v[2]}%${x.range ? `<br>สุ่ม 20 รอบ: ${usd(x.range[0])} – ${usd(x.range[1])}` : ""}`); };
+  $("#bars").onpointerleave = () => tip.hidden = true;
+  $("#tbl").innerHTML = `<thead><tr><th>วิธี</th><th>มูลค่าสุดท้าย</th><th>ผลตอบแทนต่อปี</th><th>พอร์ตลดลงสูงสุด</th></tr></thead><tbody>${rows.map(x => `<tr class="${x.sig ? "sig" : ""}"><td>${x.k}</td><td class="num">${usd(x.v[0])}</td><td class="num">${x.v[1]}%</td><td class="num">−${x.v[2]}%</td></tr>`).join("")}</tbody>`;
+  const st = r.s && r.st;
+  $("#why").innerHTML = [
+    ["เงินอยู่ในหุ้นเฉลี่ย", `${r.st.inv}%`, "ของเวลา ส่วนซื้อถืออยู่ 100%"],
+    ["จำนวนไม้", r.st.trades.toLocaleString("en-US"), `ชนะ ${r.st.win}% ของไม้`],
+    ["กำไรเฉลี่ยไม้ชนะ / ไม้แพ้", `+${r.st.aw.toFixed(1)}% / ${r.st.al.toFixed(1)}%`, "ต่อไม้ หลังหักค่าซื้อขาย"],
+  ].map(([k, v, s]) => `<div class="panel"><span class="fine">${k}</span><span class="big">${v}</span><span class="fine">${s}</span></div>`).join("");
+  $("#sigR").textContent = (r.st.r >= 0 ? "+" : "") + r.st.r.toFixed(2) + "R";
+  $("#rndR").textContent = "ชนะการสุ่มแค่ " + r.beat + " จาก 20 รอบ";
+}
+renderResults();
+
+// ── sample screens ──────────────────────────────────
+const ST = { signal: ["เข้าเงื่อนไข", "st-signal"], watch: ["เฝ้าดู", "st-watch"], wait: ["รอ", "st-wait"] };
+const CHECK_TXT = [
+  ok => ok ? "ตลาดรวม (SPY) อยู่เหนือเส้น 200 วัน" : "ตลาดรวม (SPY) อยู่ใต้เส้น 200 วัน",
+  (ok, w) => ok ? `หุ้นเป็นขาขึ้น: เส้น 50 วัน ${w.s50} อยู่เหนือเส้น 200 วัน ${w.s200}` : `ยังไม่เป็นขาขึ้นตามกติกา (เส้น 50 วัน ${w.s50} · เส้น 200 วัน ${w.s200} · ราคา ${w.c})`,
+  (ok, w) => ok ? `ย่อจากจุดสูง 20 วัน ${w.hi} ลงมา ${w.dep} เท่าของการแกว่งปกติ` : `ย่อจากจุดสูง 20 วัน ${w.hi} ลงมาแค่ ${w.dep} เท่าของการแกว่งปกติ (ต้องถึง 2)`,
+  ok => ok ? "วันล่าสุดปิดเหนือจุดสูงของวันก่อน (เริ่มฟื้น)" : "ยังไม่มีวันที่ปิดเหนือจุดสูงของวันก่อน",
+  ok => ok ? "สภาพคล่องพอ" : "สภาพคล่องต่ำเกินไป",
+  (ok, w) => ok ? `จุดออกห่าง ${w.rp}% (ไม่เกิน 10%)` : `จุดออกห่าง ${w.rp}% เกิน 10%`,
+];
+function reason(w) {
+  if (w.st === "signal") return "ย่อในขาขึ้นแล้วเริ่มฟื้นครบทุกข้อ";
+  if (!w.ok[0]) return "ตลาดรวมยังไม่เป็นขาขึ้น";
+  if (!w.ok[1]) return "หุ้นยังไม่เป็นขาขึ้นตามกติกา";
+  if (w.st === "watch") return "ย่อพอแล้ว รอวันที่เริ่มฟื้น";
+  return `ยังย่อไม่พอ (${w.dep} จาก 2 เท่า)`;
+}
+function spark(vals, w = 64, h = 26) {
+  const lo = Math.min(...vals), hi = Math.max(...vals); const y = v => (h - 2 - (v - lo) / (hi - lo || 1) * (h - 4)).toFixed(1);
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1) * w).toFixed(1)},${y(v)}`).join(" ");
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg>`;
+}
+let SEL = "NVDA";
+const order = { signal: 0, watch: 1, wait: 2 };
+const W = [...WATCH].sort((a, b) => order[a.st] - order[b.st]);
+$("#wl-count").textContent = `เข้าเงื่อนไข ${W.filter(w => w.st === "signal").length} · เฝ้าดู ${W.filter(w => w.st === "watch").length} · รอ ${W.filter(w => w.st === "wait").length}`;
+function renderWL() {
+  $("#wl").innerHTML = W.map(w => `
+    <div class="wl-row" role="option" tabindex="0" data-s="${w.s}" aria-selected="${w.s === SEL}">
+      <span class="tk">${w.s}</span>
+      <span class="status ${ST[w.st][1]}">${ST[w.st][0]}</span>
+      <span class="why-s">${reason(w)}</span>
+      <span class="px">$${w.c.toFixed(2)}<br><span class="${w.chg >= 0 ? "up" : "down"}">${w.chg >= 0 ? "+" : ""}${w.chg}%</span></span>
+    </div>`).join("");
+}
+$("#wl").onclick = e => { const r = e.target.closest(".wl-row"); if (r) { SEL = r.dataset.s; renderWL(); renderPlan(); } };
+$("#wl").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { const r = e.target.closest(".wl-row"); if (r) { e.preventDefault(); SEL = r.dataset.s; renderWL(); renderPlan(); } } };
+
+function planChart(w) {
+  const vals = w.sp, n = vals.length, Wd = 560, H = 190, pl = 6, pr = 58, pt = 10, pb = 18;
+  const zoneTop = w.c + 0.5 * w.atr;
+  const lo = Math.min(...vals, w.stop) * 0.985, hi = Math.max(...vals, w.tg, zoneTop) * 1.01;
+  const x = i => pl + i / (n - 1) * (Wd - pl - pr), y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const lvl = (v, cls, lab) => `<line x1="${pl}" x2="${Wd - pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--${cls})" stroke-width="1.2" stroke-dasharray="4 3"/><text x="${Wd - pr + 4}" y="${y(v) + 4}">${lab} ${v.toFixed(0)}</text>`;
+  return `<svg class="plan-chart" viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="ราคา ${w.s} 60 วันล่าสุด พร้อมจุดซื้อ จุดออก และเป้า">
+    <rect x="${pl}" y="${y(zoneTop)}" width="${Wd - pl - pr}" height="${Math.max(2, y(w.c) - y(zoneTop))}" fill="var(--accent-soft)"/>
+    ${lvl(w.tg, "good", "เป้า")}${lvl(w.stop, "bad", "ออก")}
+    <path d="${line}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+    <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+    <text x="${pl}" y="${H - 4}">60 วันทำการล่าสุด ถึง ${thDate(ASOF)}</text>
+  </svg>`;
+}
+function renderPlan() {
+  const w = WATCH.find(x => x.s === SEL), eq = 10000, riskAmt = eq * 0.01, perSh = w.c - w.stop;
+  const sh = Math.max(0, Math.min(Math.floor(riskAmt / perSh), Math.floor(eq * 0.2 / w.c)));
+  const zoneTop = w.c + 0.5 * w.atr, live = w.st === "signal";
+  const checks = w.ok.map((ok, i) => `<div class="check ${ok ? "ok" : "no"}"><span class="m">${ok ? "✓" : "✗"}</span><span>${CHECK_TXT[i](!!ok, w)}</span></div>`).join("");
+  $("#plan").innerHTML = `
+    <div class="plan-head"><span class="tk">${w.s}</span><span class="status ${ST[w.st][1]}">${ST[w.st][0]}</span><span class="fine" style="margin-left:auto">กติกา swing-v1.0</span></div>
+    <p class="fine">${live ? `สัญญาณจากราคาปิด ${thDate(ASOF)} · ใช้ได้ที่ราคาเปิดรอบถัดไปรอบเดียว (20:30 น. เวลาไทย)` : w.last ? `ไม่มีสัญญาณวันนี้ · ครั้งล่าสุด ${thDate(w.last)} (หมดอายุแล้ว)` : "ไม่มีสัญญาณใน 30 วันทำการล่าสุด"}</p>
+    ${live ? `
+    <div class="levels">
+      <div class="lv buy"><span class="k">ซื้อได้ถ้าเปิดไม่เกิน</span><span class="v">$${zoneTop.toFixed(2)}</span></div>
+      <div class="lv stop"><span class="k">ออกเมื่อผิดทาง</span><span class="v">$${w.stop.toFixed(2)}</span></div>
+      <div class="lv tgt"><span class="k">เป้า (คิดใหม่จากราคาซื้อจริง)</span><span class="v">≈ $${w.tg.toFixed(2)}</span></div>
+    </div>
+    ${planChart(w)}
+    <dl class="kv">
+      <dt>จำนวนที่เสนอ (เสี่ยง 1% ของ $10,000)</dt><dd>${sh} หุ้น · ${usd(sh * w.c)}</dd>
+      <dt>ขาดทุนตามแผนถ้าถึงจุดออก</dt><dd>≈ ${usd(sh * perSh)}</dd>
+      <dt>ผลตอบแทนต่อความเสี่ยง</dt><dd>2 : 1</dd>
+      <dt>ขายเมื่อถือครบ</dt><dd>20 วันทำการ</dd>
+      <dt>วันประกาศงบ</dt><dd>ยังประเมินไม่ได้</dd>
+      <dt>ข้อมูล</dt><dd>Yahoo · สิ้นวัน</dd>
+    </dl>` : planChart(w)}
+    <div class="checks">${checks}</div>
+    <div class="note bad"><b>กติกานี้ทดสอบย้อนหลังแล้วไม่ดีกว่าการสุ่มวันซื้อ</b> หน้าจอนี้มีไว้ดูหน้าตาเท่านั้น ห้ามใช้ตัดสินใจซื้อขาย</div>
+    ${live ? `<div class="note warn">ราคาขายจริงอาจต่างจากจุดออก โดยเฉพาะเมื่อราคาเปิดกระโดด ระบบแจ้งเตือนอย่างเดียว ไม่ได้ส่งคำสั่งขาย</div>` : ""}
+    <div class="btns">
+      <button type="button" class="btn primary" ${live ? "" : "disabled"}>บันทึกว่าซื้อแล้ว (ราคาจริง)</button>
+      <button type="button" class="btn">ดูประวัติแผน</button>
+      <button type="button" class="btn">ข้ามแผนนี้</button>
+    </div>`;
+}
+renderWL(); renderPlan();
+</script>

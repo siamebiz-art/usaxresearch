@@ -1,0 +1,408 @@
+<title>Swing Assistant ระยะ 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column for the findings, widening to a two-pane app frame for the sample screens. */
+:root {
+  --bg: #F3F7F6; --surface: #FFFFFF; --raised: #EAF1EF; --ink: #10201E; --muted: #566865; --line: #D8E3E0;
+  --accent: #0F766E; --accent-soft: #D7EFEB; --good: #15803D; --good-soft: #DDF3E4; --warn: #A65F06; --warn-soft: #FBEFD9;
+  --bad: #B42318; --bad-soft: #FBE3E0; --neutral-mark: #8FA19D;
+  --f-display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans Thai", "Noto Sans Thai", system-ui, sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1615; --surface: #142120; --raised: #1B2C2A; --ink: #E4EEEC; --muted: #93A6A2; --line: #26393
+
+6; --accent: #2CC3B0; --accent-soft: #123B37; --good: #4ADE80; --good-soft: #14321F; --warn: #F3B34C; --warn-soft: #3A2A0E;
+  --bad: #F87171; --bad-soft: #3B1715; --neutral-mark: #5E716D; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0D1615; --surface: #142120; --raised: #1B2C2A; --ink: #E4EEEC; --muted: #93A6A2; --line: #263936; --accent: #2CC3B0; --accent-soft: #123B37; --good: #4ADE80; --good-soft: #14321F; --warn: #F3B34C; --warn-soft: #3A2A0E;
+  --bad: #F87171; --bad-soft: #3B1715; --neutral-mark: #5E716D; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.65; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: grid; gap: 44px; }
+.col { max-width: 760px; display: grid; gap: 14px; min-width: 0; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.25; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4.4vw, 40px); font-weight: 700; }
+h2 { font-size: 23px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0 }
+.eyebrow { font-family: var(--f-data); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted) }
+.stages { display: flex; flex-wrap: wrap; gap: 8px; }
+.stage { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; font-size: 13.5px; border: 1px solid var(--line); background: var(--surface); }
+.stage b { font-weight: 600 }
+.dot { width: 8px; height: 8px; border-radius: 99px; background: var(--neutral-mark); flex-shrink: 0 }
+.dot.ok { background: var(--good) } .dot.no { background: var(--bad) }
+.verdict { border-left: 4px solid var(--bad); background: var(--surface); padding: 18px 20px; border-radius: 4px 12px 12px 4px; display: grid; gap: 10px; }
+.verdict h2 { font-size: 21px }
+ul.clean { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13.5px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.chip:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.bars { display: grid; gap: 10px; margin-top: 6px; }
+.bar-row { display: grid; grid-template-columns: minmax(96px, 150px) 1fr; gap: 12px; align-items: center; }
+.bar-label { font-size: 14px; line-height: 1.3 }
+.bar-track { position: relative; height: 26px; }
+.bar { position: absolute; left: 0; top: 4px; height: 18px; border-radius: 0 4px 4px 0; background: var(--neutral-mark); }
+.bar.sig { background: var(--accent) }
+.bar-range { position: absolute; top: 12px; height: 2px; background: var(--ink); opacity: .55 }
+.bar-range::before, .bar-range::after { content: ""; position: absolute; top: -5px; width: 2px; height: 12px; background: var(--ink); }
+.bar-range::before { left: 0 } .bar-range::after { right: 0 }
+.bar-val { position: absolute; top: 3px; font-family: var(--f-data); font-size: 12.5px; white-space: nowrap; color: var(--ink); }
+.contrib { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--muted); }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.14); max-width: 260px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left }
+thead th { font-weight: 600; color: var(--muted); font-size: 12.5px }
+tbody tr.sig td { font-weight: 600 }
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.why .panel { display: grid; gap: 4px; }
+.big { font-family: var(--f-data); font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.rules { counter-reset: r; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.rule { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.rule::before { counter-increment: r; content: counter(r); font-family: var(--f-data); color: var(--accent); font-weight: 500; }
+.rule p + p { margin-top: 2px }
+code, .param { font-family: var(--f-data); font-size: .92em; background: var(--raised); padding: 1px 5px; border-radius: 4px; }
+/* sample screens */
+.screens { display: grid; gap: 14px; }
+.appbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.appbar .name { font-family: var(--f-display); font-weight: 700; font-size: 18px; margin-right: auto; }
+.tag { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+.tag.paper { background: var(--accent-soft); color: var(--accent) }
+.app { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 860px) { .app { grid-template-columns: 1fr } }
+.wl-row { display: grid; grid-template-columns: 64px 108px 1fr 78px; gap: 10px; align-items: center; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 8px; }
+.wl-row:hover { background: var(--raised) }
+.wl-row[aria-selected="true"] { background: var(--accent-soft) }
+.wl-row .tk { font-family: var(--f-data); font-weight: 500; }
+.wl-row .why-s { font-size: 13px; color: var(--muted); line-height: 1.4; min-width: 0 }
+.wl-row .px { text-align: right; font-family: var(--f-data); font-size: 13px; line-height: 1.35 }
+@media (max-width: 520px) { .wl-row { grid-template-columns: 56px 1fr 74px; } .wl-row .why-s { grid-column: 1 / -1; order: 4 } }
+.status { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; text-align: center; white-space: nowrap; }
+.st-signal { background: var(--good-soft); color: var(--good) }
+.st-watch { background: var(--warn-soft); color: var(--warn) }
+.st-wait { background: var(--raised); color: var(--muted) }
+.up { color: var(--good) } .down { color: var(--bad) }
+.plan-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan-head .tk { font-family: var(--f-display); font-size: 24px; font-weight: 700 }
+.levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.lv { border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0 }
+.lv .k { font-size: 12.5px; color: var(--muted) } .lv .v { font-family: var(--f-data); font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+.lv.buy { background: var(--accent-soft) } .lv.stop { background: var(--bad-soft) } .lv.tgt { background: var(--good-soft) }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; font-size: 14px; margin-top: 12px; }
+.kv dt { color: var(--muted) } .kv dd { margin: 0; text-align: right; font-family: var(--f-data); font-variant-numeric: tabular-nums }
+.checks { display: grid; gap: 6px; margin-top: 12px; font-size: 13.5px; }
+.check { display: grid; grid-template-columns: 20px 1fr; gap: 6px; line-height: 1.45 }
+.check .m { font-family: var(--f-data); font-weight: 600 }
+.check.ok .m { color: var(--good) } .check.no .m { color: var(--bad) }
+.note { border-radius: 10px; padding: 10px 12px; font-size: 13.5px; line-height: 1.5; margin-top: 12px; }
+.note.warn { background: var(--warn-soft) } .note.bad { background: var(--bad-soft) }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.btn { font: inherit; font-weight: 600; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn.primary { grid-column: 1 / -1; background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn[disabled] { opacity: .5; cursor: not-allowed }
+.plan-chart text { font-family: var(--f-data); font-size: 11px; fill: var(--muted) }
+.fine { font-size: 12.5px; color: var(--muted); line-height: 1.5 }
+.timeline { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.tl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tl .t { font-family: var(--f-data); white-space: nowrap; text-align: right }
+.tl p { grid-column: 1 / -1; font-size: 14px; color: var(--muted) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header class="col">
+    <span class="eyebrow">ข้อเสนอระยะ 1 · กติกา swing-v1.0 · ราคาปิดล่าสุด <span id="asof"></span></span>
+    <h1>Swing Assistant ระยะ 1</h1>
+    <p class="muted">ระบบช่วยจับจังหวะซื้อขายหุ้นอเมริกาเป็นรอบ: กติกากลยุทธ์รุ่นแรก ผลทดสอบย้อนหลังด้วยข้อมูลจริง ต้นทุนข้อมูล ระยะเวลา และหน้าจอตัวอย่าง</p>
+    <div class="stages" aria-label="สถานะระบบ">
+      <span class="stage"><span class="dot no"></span><b>ระบบทำงานได้</b> ยังไม่มี</span>
+      <span class="stage"><span class="dot ok"></span><b>ทดสอบย้อนหลังแล้ว</b> 2010–2026</span>
+      <span class="stage"><span class="dot no"></span><b>ทดลองเดินหน้าแล้ว</b> ยังไม่ได้ทำ</span>
+    </div>
+  </header>
+
+  <section class="col">
+    <div class="verdict">
+      <span class="eyebrow">คำตอบสั้น</span>
+      <h2>กติการุ่นแรกไม่ผ่าน: ไม่ดีกว่าการสุ่มวันซื้อ และแพ้การซื้อถือห่างมาก</h2>
+      <ul class="clean">
+        <li>สัญญาณ "ย่อในขาขึ้นแล้วเริ่มฟื้น" ชนะกลุ่มควบคุมที่สุ่มวันซื้อ (ใช้จุดออก เป้า และขนาดไม้แบบเดียวกัน) แค่ 3–11 ครั้งจาก 20 ครั้ง ในทุกกลุ่มหุ้นและทุกช่วงเวลา ซึ่งพอ ๆ กับโยนเหรียญ</li>
+        <li>ใส่เงินเท่ากัน (เริ่ม $10,000 เติมเดือนละ $500) ตามสัญญาณได้ผลตอบแทน 1–9% ต่อปี ส่วนซื้อถือหุ้นชุดเดียวกันได้ 9–45% ต่อปี</li>
+        <li>สิ่งเดียวที่ดีกว่าคือพอร์ตลดลงน้อยกว่า (ราว 12–19% เทียบกับ 16–55%) แต่เป็นเพราะเงินอยู่ในหุ้นแค่ครึ่งเดียวของเวลา ไม่ได้มาจากการจับจังหวะ</li>
+      </ul>
+      <p><b>ข้อแนะนำ:</b> ไม่สร้างระยะ 2–4 ด้วยกติกานี้ ถ้าจะไปต่อ ให้ลองกติกาแบบอื่นอีก 2–3 แบบด้วยเครื่องทดสอบชุดนี้ก่อน (ใช้ราว 1–2 วัน ยังไม่ต้องทำหน้าจอ) และสร้างระบบต่อก็ต่อเมื่อมีกติกาที่ผ่านทั้ง 3 ข้อในส่วน "เกณฑ์ไปต่อ" ด้านล่าง</p>
+    </div>
+  </section>
+
+  <section class="col" aria-labelledby="h-results">
+    <span class="eyebrow">หลักฐาน</span>
+    <h2 id="h-results">ผลทดสอบย้อนหลัง</h2>
+    <p>ทุกวิธีใช้หุ้นชุดเดียวกัน ช่วงเวลาเดียวกัน เงินเริ่มและเงินเติมเท่ากัน หักค่าซื้อขายและส่วนต่างราคารวมข้างละ 0.1% ใช้ราคาที่ปรับปันผลและแตกพาร์แล้ว แบ่งข้อมูลเป็น 2 ครึ่ง ครึ่งหลังเป็นข้อมูลที่ไม่ได้ใช้ตอนตั้งกติกา (ค่าทุกตัวตั้งไว้ก่อนทดสอบ ไม่ได้ปรับให้ผลออกมาดี)</p>
+    <div class="panel">
+      <div style="display:grid; gap:10px">
+        <div class="chips" role="group" aria-label="กลุ่มหุ้น" id="u-chips"></div>
+        <div class="chips" role="group" aria-label="ช่วงเวลา" id="p-chips"></div>
+      </div>
+      <p class="fine" style="margin-top:10px" id="scenario-note"></p>
+      <div class="bars" id="bars"></div>
+      <p class="fine" style="margin-top:8px">เส้นประ = เงินที่ใส่ไปทั้งหมด · ขีดคร่อมแถว "สุ่มวันซื้อ" = ผลแย่สุดถึงดีสุดจากการสุ่ม 20 รอบ (แท่งคือค่ากลาง)</p>
+    </div>
+    <div class="scroll">
+      <table id="tbl" aria-label="ตารางผลทดสอบ"></table>
+    </div>
+  </section>
+
+  <section class="col" aria-labelledby="h-why">
+    <span class="eyebrow">ทำไมแพ้</span>
+    <h2 id="h-why">เงินไม่ได้อยู่ในตลาด และไม้ที่เข้าก็ไม่ได้ดีกว่าสุ่ม</h2>
+    <div class="why" id="why"></div>
+    <p>กำไรเฉลี่ยต่อไม้ของสัญญาณ (<span class="num" id="sigR"></span>) ใกล้กับการสุ่มวันซื้อ (<span class="num" id="rndR"></span>) ที่มีกำไรต่อไม้เป็นบวก เป็นเพราะหุ้นในช่วงนี้ขึ้นเป็นส่วนใหญ่ ไม่ใช่เพราะจังหวะ ผลนี้ตรงกับหน้า <a href="https://usaxresearch.vercel.app/backtest">จำลอง DCA vs ซื้อตอนย่อ</a> ที่การรอซื้อตอนย่อแพ้ DCA ทั้ง 272 ครั้ง</p>
+  </section>
+
+  <section class="col" aria-labelledby="h-rules">
+    <span class="eyebrow">กติกา swing-v1.0 (ล็อกเวอร์ชันไว้)</span>
+    <h2 id="h-rules">กติกาที่ทดสอบ</h2>
+    <p>ใช้แท่งรายวันที่ปิดแล้วเท่านั้น ประเมินหลังตลาดสหรัฐปิด (03:00 น. เวลาไทย ช่วงเวลาออมแสง ถึง 1 พ.ย. 2026 · 04:00 น. หลังจากนั้น) และซื้อที่ราคาเปิดของวันถัดไป (20:30 / 21:30 น. เวลาไทย) ราคาจาก Yahoo Finance แบบสิ้นวัน</p>
+    <div class="rules">
+      <div class="rule"><div><p><b>ตลาดรวมเป็นขาขึ้น</b> SPY ปิดเหนือเส้นค่าเฉลี่ย 200 วัน</p></div></div>
+      <div class="rule"><div><p><b>หุ้นเป็นขาขึ้น</b> ราคาปิดเหนือเส้น 200 วัน · เส้น 50 วันอยู่เหนือเส้น 200 วัน · เส้น 200 วันสูงกว่าเมื่อ 20 วันก่อน</p></div></div>
+      <div class="rule"><div><p><b>ย่อพอ</b> จุดต่ำสุดใน 5 วันล่าสุด ต่ำกว่าจุดสูงสุด 20 วัน อย่างน้อย <span class="param">2 × ATR14</span> (ATR = ระยะแกว่งเฉลี่ยต่อวัน) และยังอยู่เหนือเส้น 200 วัน</p></div></div>
+      <div class="rule"><div><p><b>เริ่มฟื้น</b> วันนี้ปิดเหนือจุดสูงของเมื่อวาน และปิดสูงกว่าราคาเปิด</p></div></div>
+      <div class="rule"><div><p><b>สภาพคล่อง</b> มูลค่าซื้อขายเฉลี่ย 20 วัน ≥ <span class="param">$20M</span> ต่อวัน</p></div></div>
+      <div class="rule"><div><p><b>จุดออกเมื่อผิดทาง</b> จุดต่ำสุด 5 วัน − <span class="param">0.25 × ATR</span> · ข้ามถ้าจุดออกห่างเกิน <span class="param">10%</span></p></div></div>
+      <div class="rule"><div><p><b>เป้าทำกำไร</b> ราคาซื้อจริง + <span class="param">2 ×</span> ระยะถึงจุดออก (คำนวณใหม่จากราคาซื้อจริง)</p></div></div>
+      <div class="rule"><div><p><b>หมดอายุและเลยโซน</b> สัญญาณใช้ได้ที่ราคาเปิดวันถัดไปวันเดียว · ไม่ซื้อถ้าเปิดสูงกว่าราคาปิดวันสัญญาณเกิน <span class="param">0.5 × ATR</span> หรือเปิดต่ำกว่าจุดออก</p></div></div>
+      <div class="rule"><div><p><b>ถือครบเวลา</b> ขายที่ราคาเปิดหลังถือครบ <span class="param">20</span> วันทำการ</p></div></div>
+      <div class="rule"><div><p><b>ขนาดไม้</b> เสี่ยง <span class="param">1%</span> ของพอร์ตต่อไม้ · ต่อหุ้นไม่เกิน <span class="param">20%</span> ของพอร์ต · ถือพร้อมกันไม่เกิน <span class="param">5</span> ตัว · ไม่ถัวขาดทุน · ไม่ใช้เงินเกินเงินสดที่มี</p></div></div>
+    </div>
+    <h3 style="margin-top:8px">กติกาของเครื่องทดสอบ</h3>
+    <ul class="clean">
+      <li>ถ้าวันเดียวแตะทั้งเป้าและจุดออก ให้นับว่าแตะจุดออกก่อน (ประเมินแบบระวังไว้ก่อน)</li>
+      <li>ถ้าราคาเปิดกระโดดข้ามจุดออก ขายที่ราคาเปิด ไม่ใช่ที่จุดออก (มี 92 ไม้จาก 1,341 ไม้ที่ขาดทุนเกินแผนแบบนี้)</li>
+      <li>เก็บทุกสัญญาณ รวมไม้ที่ขาดทุนและสัญญาณที่หมดอายุ · ไม้ที่ยังถืออยู่ตอนจบช่วง คิดมูลค่าตามราคาปิดวันสุดท้าย</li>
+      <li>ตรวจตัวทดสอบเองแล้ว: ซื้อถือ MSFT ได้เท่ากับอัตราส่วนราคาจริงพอดี · ไม้ที่ขายที่จุดออกเป็น −1R ทุกไม้ ไม้ที่ขายที่เป้าเป็น +2R ทุกไม้ · <b>ทดสอบกับราคาสุ่มที่ไม่มีทิศทาง 16 ชุด ได้กำไรเฉลี่ย +0.005R ต่อไม้ (แทบเป็นศูนย์)</b> แปลว่าเครื่องทดสอบไม่ได้สร้างกำไรขึ้นมาเอง</li>
+      <li>ใส่หุ้นใหญ่อีก 10 ตัวที่ราคาไม่ได้ไปไหน (INTC, CSCO, IBM, BA, DIS, NKE, PYPL, PFE, VZ, XOM) ไว้คู่กับ 10 นางฟ้า เพราะการทดสอบกับหุ้นที่เรารู้แล้วว่าขึ้นมาก จะทำให้ทุกวิธีดูดีเกินจริง</li>
+    </ul>
+    <h3 style="margin-top:8px">สิ่งที่ยังไม่ได้ทดสอบ</h3>
+    <ul class="clean">
+      <li><b>ตัวกรองวันประกาศงบ</b> ยังไม่ได้ทดสอบ เพราะยังไม่มีประวัติวันประกาศงบย้อนหลังแบบฟรี (แหล่งข้อมูลแบบเสียเงินมีให้)</li>
+      <li>ภาษีและค่าเงิน: ผลทั้งหมดเป็นดอลลาร์ ก่อนภาษี ยังไม่คิดค่าแลกเงินบาท ซึ่งเท่ากันทุกวิธี แต่ค่าซื้อขายจะกระทบวิธีที่ซื้อขายบ่อยมากกว่า</li>
+      <li>ลองดูแล้ว: ถ้าเงินสดที่รอได้ดอกเบี้ย 4% ต่อปี ผลตามสัญญาณดีขึ้น 1–2.5% ต่อปี ยังแพ้ซื้อถือ · ถ้าค่าซื้อขายข้างละ 0.25% ผลตามสัญญาณเหลือ −1.8% ถึง +6.8% ต่อปี</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-screens" style="display:grid; gap:14px">
+    <div class="col">
+      <span class="eyebrow">หน้าจอตัวอย่าง · ข้อมูลจริง ณ ราคาปิด <span class="asof2"></span></span>
+      <h2 id="h-screens">Watchlist + Trade Plan</h2>
+      <p>ทุกสถานะในหน้าจอนี้คำนวณจากกติกา swing-v1.0 กับราคาปิดจริง ไม่ได้แต่งขึ้น กดหุ้นแต่ละตัวเพื่อดูแผนและเหตุผลทีละข้อ ตัวเลขขนาดไม้คิดจากพอร์ตจำลอง $10,000</p>
+    </div>
+    <div class="screens">
+      <div class="appbar">
+        <span class="name">Swing Assistant</span>
+        <span class="tag paper">พอร์ตจำลอง $10,000</span>
+        <span class="tag">ข้อมูลสิ้นวัน · ไม่ใช่ราคาเรียลไทม์</span>
+      </div>
+      <div class="app">
+        <div class="panel" style="padding:12px">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:4px 8px 8px">
+            <h3>หุ้นที่ติดตาม · 10 นางฟ้า</h3>
+            <span class="fine" id="wl-count"></span>
+          </div>
+          <div id="wl" role="listbox" aria-label="หุ้นที่ติดตาม"></div>
+        </div>
+        <div class="panel" id="plan" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="col" aria-labelledby="h-data">
+    <span class="eyebrow">ข้อมูล</span>
+    <h2 id="h-data">แหล่งข้อมูลและค่าใช้จ่ายรายเดือน</h2>
+    <!--PROVIDERS-->
+  </section>
+
+  <section class="col" aria-labelledby="h-time">
+    <span class="eyebrow">ประเมินเวลา</span>
+    <h2 id="h-time">ระยะเวลาและต้นทุน</h2>
+    <p>ตัวเลขเวลาเป็นการประเมิน ไม่ใช่ตัวเลขที่วัดมา ระยะ 1 ทำเสร็จแล้วในรอบนี้ ส่วนระยะ 2–4 ควรเริ่มก็ต่อเมื่อมีกติกาที่ผ่านเกณฑ์ไปต่อ</p>
+    <div class="timeline">
+      <div class="tl"><b>ระยะ 1 · กติกา ข้อมูล หน้าจอต้นแบบ</b><span class="t">เสร็จแล้ว</span><p>กติกา v1.0 · เครื่องทดสอบพอร์ตที่ตรวจตัวเองแล้ว · ผลทดสอบ · หน้าจอตัวอย่างนี้</p></div>
+      <div class="tl"><b>ระยะ 1.5 · ลองกติกาอีก 2–3 แบบ</b><span class="t">1–2 วัน</span><p>ใช้เครื่องทดสอบเดิม ไม่ต้องทำหน้าจอ เป็นด่านตัดสินว่าจะไปต่อหรือหยุด</p></div>
+      <div class="tl"><b>ระยะ 2 · เครื่องยนต์สัญญาณในตัวแอป</b><span class="t">1–2 สัปดาห์</span><p>ย้ายเครื่องทดสอบเข้าแอป · Watchlist และ Trade Plan ใช้งานจริง · เก็บประวัติแผนทุกเวอร์ชัน</p></div>
+      <div class="tl"><b>ระยะ 3 · พอร์ตจำลองและแจ้งเตือน</b><span class="t">2 สัปดาห์</span><p>บัญชีผู้ใช้ · ตั้งงบและความเสี่ยง · ประเมินอัตโนมัติหลังตลาดปิดทุกวัน · แจ้งเตือนเมื่อสถานะเปลี่ยน ไม่ส่งซ้ำ</p></div>
+      <div class="tl"><b>ทดลองเดินหน้าด้วยพอร์ตจำลอง</b><span class="t">3–6 เดือน</span><p>เร่งไม่ได้ เพราะต้องรอตลาดเดินจริง ระบบแบบนี้ได้สัญญาณราว 2–3 ไม้ต่อสัปดาห์ เลยต้องใช้เวลาหลายเดือนกว่าจะมีไม้พอให้วัดผล</p></div>
+      <div class="tl"><b>ระยะ 4 · บันทึกการซื้อขายจริงและวัดผล</b><span class="t">1 สัปดาห์</span><p>บันทึกราคาซื้อขายจริง · คำนวณจุดออกใหม่จากราคาจริง · เทียบกับ DCA และซื้อถือแบบต่อเนื่อง</p></div>
+    </div>
+    <h3 style="margin-top:8px">การตัดสินใจทางเทคนิค</h3>
+    <ul class="clean">
+      <li><b>ไม่ใช้ FastAPI แยก</b> เครื่องทดสอบเขียนด้วย TypeScript อยู่แล้วและทำงานในแอป Next.js ได้เลย ระบบจะเหลือที่ deploy ที่เดียว ไม่ต้องดูแลเซิร์ฟเวอร์ Python อีกตัว</li>
+      <li><b>ต้องสร้างโปรเจกต์ Supabase ใหม่</b> (ตัวเดิมของ USAXresearch ถูกลบไปแล้ว) สำหรับบัญชีผู้ใช้ พอร์ตจำลอง และประวัติสัญญาณ ขั้นนี้คุณต้องกดสร้างเองในหน้า Supabase</li>
+      <li><b>ถ้าจะเปิดให้คนอื่นใช้</b> การบอกจุดซื้อขายหุ้นรายตัวให้คนทั่วไป เข้าข่ายการให้คำแนะนำการลงทุนที่ต้องมีใบอนุญาต ก.ล.ต. ถ้าใช้เองคนเดียวไม่มีปัญหา</li>
+    </ul>
+  </section>
+
+  <section class="col" aria-labelledby="h-gate">
+    <span class="eyebrow">เกณฑ์ไปต่อ</span>
+    <h2 id="h-gate">กติกาแบบใหม่ต้องผ่านทั้ง 3 ข้อ ถึงจะสร้างระบบต่อ</h2>
+    <ul class="clean">
+      <li>ชนะกลุ่มควบคุมที่สุ่มวันซื้อ อย่างน้อย 16 ครั้งจาก 20 ครั้ง ทั้งในข้อมูลครึ่งแรกและครึ่งหลัง</li>
+      <li>หลังหักค่าซื้อขายข้างละ 0.25% ยังได้ผลตอบแทนต่อการลดลงสูงสุด ดีกว่าการซื้อถือ SPY</li>
+      <li>ได้ผลทั้งใน 10 นางฟ้าและในกลุ่มหุ้นที่ราคาไม่ได้ไปไหน ไม่ใช่ได้ผลแค่กลุ่มเดียว</li>
+    </ul>
+    <p class="fine">ผลในอดีตไม่ได้รับประกันผลในอนาคต เอกสารนี้ใช้ประกอบการตัดสินใจภายใน ไม่ใช่คำแนะนำการลงทุน</p>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+/*EMBED*/
+const $ = s => document.querySelector(s);
+const usd = v => "$" + Math.round(v).toLocaleString("en-US");
+const thDate = d => { const [y, m, dd] = d.split("-").map(Number); const M = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."]; return `${dd} ${M[m - 1]} ${y}`; };
+$("#asof").textContent = thDate(ASOF); document.querySelectorAll(".asof2").forEach(e => e.textContent = thDate(ASOF));
+
+// ── results ─────────────────────────────────────────
+const UNI = [["all", "รวม 20 ตัว"], ["mag", "10 นางฟ้า"], ["lag", "10 ตัวที่ราคาไม่ไปไหน"]];
+const PER = [["first", "ครึ่งแรก 2010–2018"], ["second", "ครึ่งหลัง 2019–ปัจจุบัน"]];
+let U = "all", P = "second";
+function chips(el, list, get, set) {
+  el.innerHTML = list.map(([k, l]) => `<button type="button" class="chip" data-k="${k}" aria-pressed="${k === get()}">${l}</button>`).join("");
+  el.onclick = e => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.k); renderResults(); };
+}
+const tip = $("#tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function renderResults() {
+  chips($("#u-chips"), UNI, () => U, v => U = v); chips($("#p-chips"), PER, () => P, v => P = v);
+  const r = RESULTS[`${U}/${P}`];
+  const rows = [
+    { k: "ตามสัญญาณ v1", v: r.s, sig: true },
+    { k: "สุ่มวันซื้อ (ค่ากลาง)", v: r.rm, range: r.rr },
+    { k: "ซื้อถือ", v: r.bh },
+    { k: "DCA รายเดือน", v: r.dca },
+    { k: "ซื้อถือ SPY", v: r.spy },
+  ];
+  const max = Math.max(...rows.map(x => Math.max(x.v[0], x.range ? x.range[1] : 0))) * 1.18;
+  const pct = v => (v / max * 100).toFixed(2) + "%";
+  $("#scenario-note").textContent = `ใส่เงินรวม ${usd(r.c)} · สัญญาณชนะการสุ่ม ${r.beat} จาก 20 รอบ`;
+  $("#bars").innerHTML = rows.map((x, i) => `
+    <div class="bar-row" data-i="${i}">
+      <div class="bar-label">${x.k}</div>
+      <div class="bar-track">
+        <div class="bar ${x.sig ? "sig" : ""}" style="width:${pct(x.v[0])}"></div>
+        ${x.range ? `<div class="bar-range" style="left:${pct(x.range[0])}; width:calc(${pct(x.range[1])} - ${pct(x.range[0])})"></div>` : ""}
+        <span class="bar-val" style="left:calc(${pct(x.range ? Math.max(x.v[0], x.range[1]) : x.v[0])} + 6px)">${usd(x.v[0])}</span>
+        <div class="contrib" style="left:${pct(r.c)}"></div>
+      </div>
+    </div>`).join("");
+  $("#bars").onpointermove = e => { const row = e.target.closest(".bar-row"); if (!row) { tip.hidden = true; return; } const x = rows[+row.dataset.i];
+    showTip(e, `<b>${x.k}</b><br>มูลค่าสุดท้าย ${usd(x.v[0])}<br>ผลตอบแทน ${x.v[1]}% ต่อปี<br>พอร์ตลดลงสูงสุด ${x.v[2]}%${x.range ? `<br>สุ่ม 20 รอบ: ${usd(x.range[0])} – ${usd(x.range[1])}` : ""}`); };
+  $("#bars").onpointerleave = () => tip.hidden = true;
+  $("#tbl").innerHTML = `<thead><tr><th>วิธี</th><th>มูลค่าสุดท้าย</th><th>ผลตอบแทนต่อปี</th><th>พอร์ตลดลงสูงสุด</th></tr></thead><tbody>${rows.map(x => `<tr class="${x.sig ? "sig" : ""}"><td>${x.k}</td><td class="num">${usd(x.v[0])}</td><td class="num">${x.v[1]}%</td><td class="num">−${x.v[2]}%</td></tr>`).join("")}</tbody>`;
+  const st = r.s && r.st;
+  $("#why").innerHTML = [
+    ["เงินอยู่ในหุ้นเฉลี่ย", `${r.st.inv}%`, "ของเวลา ส่วนซื้อถืออยู่ 100%"],
+    ["จำนวนไม้", r.st.trades.toLocaleString("en-US"), `ชนะ ${r.st.win}% ของไม้`],
+    ["กำไรเฉลี่ยไม้ชนะ / ไม้แพ้", `+${r.st.aw.toFixed(1)}% / ${r.st.al.toFixed(1)}%`, "ต่อไม้ หลังหักค่าซื้อขาย"],
+  ].map(([k, v, s]) => `<div class="panel"><span class="fine">${k}</span><span class="big">${v}</span><span class="fine">${s}</span></div>`).join("");
+  $("#sigR").textContent = (r.st.r >= 0 ? "+" : "") + r.st.r.toFixed(2) + "R";
+  $("#rndR").textContent = "ชนะ " + r.beat + "/20 รอบ";
+}
+renderResults();
+
+// ── sample screens ──────────────────────────────────
+const ST = { signal: ["เข้าเงื่อนไข", "st-signal"], watch: ["เฝ้าดู", "st-watch"], wait: ["รอ", "st-wait"] };
+const CHECK_TXT = [
+  ok => ok ? "ตลาดรวม (SPY) อยู่เหนือเส้น 200 วัน" : "ตลาดรวม (SPY) อยู่ใต้เส้น 200 วัน",
+  (ok, w) => ok ? `หุ้นเป็นขาขึ้น: เส้น 50 วัน ${w.s50} อยู่เหนือเส้น 200 วัน ${w.s200}` : `ยังไม่เป็นขาขึ้นตามกติกา (เส้น 50 วัน ${w.s50} · เส้น 200 วัน ${w.s200} · ราคา ${w.c})`,
+  (ok, w) => ok ? `ย่อจากจุดสูง 20 วัน ${w.hi} ลงมา ${w.dep} เท่าของการแกว่งปกติ` : `ย่อจากจุดสูง 20 วัน ${w.hi} ลงมาแค่ ${w.dep} เท่าของการแกว่งปกติ (ต้องถึง 2)`,
+  ok => ok ? "วันล่าสุดปิดเหนือจุดสูงของวันก่อน (เริ่มฟื้น)" : "ยังไม่มีวันที่ปิดเหนือจุดสูงของวันก่อน",
+  ok => ok ? "สภาพคล่องพอ" : "สภาพคล่องต่ำเกินไป",
+  (ok, w) => ok ? `จุดออกห่าง ${w.rp}% (ไม่เกิน 10%)` : `จุดออกห่าง ${w.rp}% เกิน 10%`,
+];
+function reason(w) {
+  if (w.st === "signal") return "ย่อในขาขึ้นแล้วเริ่มฟื้นครบทุกข้อ";
+  if (!w.ok[0]) return "ตลาดรวมยังไม่เป็นขาขึ้น";
+  if (!w.ok[1]) return "หุ้นยังไม่เป็นขาขึ้นตามกติกา";
+  if (w.st === "watch") return "ย่อพอแล้ว รอวันที่เริ่มฟื้น";
+  return `ยังย่อไม่พอ (${w.dep} จาก 2 เท่า)`;
+}
+function spark(vals, w = 64, h = 26) {
+  const lo = Math.min(...vals), hi = Math.max(...vals); const y = v => (h - 2 - (v - lo) / (hi - lo || 1) * (h - 4)).toFixed(1);
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1) * w).toFixed(1)},${y(v)}`).join(" ");
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg>`;
+}
+let SEL = "NVDA";
+const order = { signal: 0, watch: 1, wait: 2 };
+const W = [...WATCH].sort((a, b) => order[a.st] - order[b.st]);
+$("#wl-count").textContent = `เข้าเงื่อนไข ${W.filter(w => w.st === "signal").length} · เฝ้าดู ${W.filter(w => w.st === "watch").length} · รอ ${W.filter(w => w.st === "wait").length}`;
+function renderWL() {
+  $("#wl").innerHTML = W.map(w => `
+    <div class="wl-row" role="option" tabindex="0" data-s="${w.s}" aria-selected="${w.s === SEL}">
+      <span class="tk">${w.s}</span>
+      <span class="status ${ST[w.st][1]}">${ST[w.st][0]}</span>
+      <span class="why-s">${reason(w)}</span>
+      <span class="px">$${w.c.toFixed(2)}<br><span class="${w.chg >= 0 ? "up" : "down"}">${w.chg >= 0 ? "+" : ""}${w.chg}%</span></span>
+    </div>`).join("");
+}
+$("#wl").onclick = e => { const r = e.target.closest(".wl-row"); if (r) { SEL = r.dataset.s; renderWL(); renderPlan(); } };
+$("#wl").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { const r = e.target.closest(".wl-row"); if (r) { e.preventDefault(); SEL = r.dataset.s; renderWL(); renderPlan(); } } };
+
+function planChart(w) {
+  const vals = w.sp, n = vals.length, Wd = 560, H = 190, pl = 6, pr = 58, pt = 10, pb = 18;
+  const zoneTop = w.c + 0.5 * w.atr;
+  const lo = Math.min(...vals, w.stop) * 0.985, hi = Math.max(...vals, w.tg, zoneTop) * 1.01;
+  const x = i => pl + i / (n - 1) * (Wd - pl - pr), y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const lvl = (v, cls, lab) => `<line x1="${pl}" x2="${Wd - pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--${cls})" stroke-width="1.2" stroke-dasharray="4 3"/><text x="${Wd - pr + 4}" y="${y(v) + 4}">${lab} ${v.toFixed(0)}</text>`;
+  return `<svg class="plan-chart" viewBox="0 0 ${Wd} ${H}" width="100%" role="img" aria-label="ราคา ${w.s} 60 วันล่าสุด พร้อมจุดซื้อ จุดออก และเป้า">
+    <rect x="${pl}" y="${y(zoneTop)}" width="${Wd - pl - pr}" height="${Math.max(2, y(w.c) - y(zoneTop))}" fill="var(--accent-soft)"/>
+    ${lvl(w.tg, "good", "เป้า")}${lvl(w.stop, "bad", "ออก")}
+    <path d="${line}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+    <circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+    <text x="${pl}" y="${H - 4}">60 วันทำการล่าสุด ถึง ${thDate(ASOF)}</text>
+  </svg>`;
+}
+function renderPlan() {
+  const w = WATCH.find(x => x.s === SEL), eq = 10000, riskAmt = eq * 0.01, perSh = w.c - w.stop;
+  const sh = Math.max(0, Math.min(Math.floor(riskAmt / perSh), Math.floor(eq * 0.2 / w.c)));
+  const zoneTop = w.c + 0.5 * w.atr, live = w.st === "signal";
+  const checks = w.ok.map((ok, i) => `<div class="check ${ok ? "ok" : "no"}"><span class="m">${ok ? "✓" : "✗"}</span><span>${CHECK_TXT[i](!!ok, w)}</span></div>`).join("");
+  $("#plan").innerHTML = `
+    <div class="plan-head"><span class="tk">${w.s}</span><span class="status ${ST[w.st][1]}">${ST[w.st][0]}</span><span class="fine" style="margin-left:auto">กติกา swing-v1.0</span></div>
+    <p class="fine">${live ? `สัญญาณจากราคาปิด ${thDate(ASOF)} · ใช้ได้ที่ราคาเปิดรอบถัดไปรอบเดียว (20:30 น. เวลาไทย)` : w.last ? `ไม่มีสัญญาณวันนี้ · ครั้งล่าสุด ${thDate(w.last)} (หมดอายุแล้ว)` : "ไม่มีสัญญาณใน 30 วันทำการล่าสุด"}</p>
+    ${live ? `
+    <div class="levels">
+      <div class="lv buy"><span class="k">ซื้อได้ถ้าเปิดไม่เกิน</span><span class="v">$${zoneTop.toFixed(2)}</span></div>
+      <div class="lv stop"><span class="k">ออกเมื่อผิดทาง</span><span class="v">$${w.stop.toFixed(2)}</span></div>
+      <div class="lv tgt"><span class="k">เป้า (คิดใหม่จากราคาซื้อจริง)</span><span class="v">≈ $${w.tg.toFixed(2)}</span></div>
+    </div>
+    ${planChart(w)}
+    <dl class="kv">
+      <dt>จำนวนที่เสนอ (เสี่ยง 1% ของ $10,000)</dt><dd>${sh} หุ้น · ${usd(sh * w.c)}</dd>
+      <dt>ขาดทุนตามแผนถ้าถึงจุดออก</dt><dd>≈ ${usd(sh * perSh)}</dd>
+      <dt>ผลตอบแทนต่อความเสี่ยง</dt><dd>2 : 1</dd>
+      <dt>ขายเมื่อถือครบ</dt><dd>20 วันทำการ</dd>
+      <dt>วันประกาศงบ</dt><dd>ยังประเมินไม่ได้</dd>
+      <dt>ข้อมูล</dt><dd>Yahoo · สิ้นวัน</dd>
+    </dl>` : planChart(w)}
+    <div class="checks">${checks}</div>
+    <div class="note bad"><b>กติกานี้ทดสอบย้อนหลังแล้วไม่ดีกว่าการสุ่มวันซื้อ</b> หน้าจอนี้มีไว้ดูหน้าตาเท่านั้น ห้ามใช้ตัดสินใจซื้อขาย</div>
+    ${live ? `<div class="note warn">ราคาขายจริงอาจต่างจากจุดออก โดยเฉพาะเมื่อราคาเปิดกระโดด ระบบแจ้งเตือนอย่างเดียว ไม่ได้ส่งคำสั่งขาย</div>` : ""}
+    <div class="btns">
+      <button type="button" class="btn primary" ${live ? "" : "disabled"}>บันทึกว่าซื้อแล้ว (ราคาจริง)</button>
+      <button type="button" class="btn">ดูประวัติแผน</button>
+      <button type="button" class="btn">ข้ามแผนนี้</button>
+    </div>`;
+}
+renderWL(); renderPlan();
+</script>
