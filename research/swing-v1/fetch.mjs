@@ -1,4 +1,5 @@
 import fs from "node:fs";
+fs.mkdirSync("data", { recursive: true });
 const T = ["SPY","NVDA","MSFT","AAPL","GOOGL","AMZN","META","TSLA","AVGO","PLTR","AMD","INTC","CSCO","IBM","BA","DIS","NKE","PYPL","PFE","VZ","XOM"];
 for (const s of T) {
   const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?period1=1104537600&period2=${Math.floor(Date.now()/1000)}&interval=1d&events=div,splits`, { headers: { "User-Agent": "Mozilla/5.0" } });
